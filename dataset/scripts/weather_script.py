@@ -153,9 +153,9 @@ def create_folder():
 
 start = time.time()
 combine_historicforecast_bool =False
-station_ids_r = ["00722", "01262", "01975", "02667", "02932"]
-station_ids_f = ["10453", "10870", "10147", "10513", "10469"]
-station_place = ["Brocken", "Muenchen", "Hamburg", "KoelnBonn", "LeipzigHalle"]
+station_ids_r = [ "01262", "01975", "02667"]
+station_ids_f = [ "10870", "10147", "10513"]
+station_place = [ "Muenchen", "Hamburg", "KoelnBonn" ]
 
 #Erstelle die Ordner
 create_folder()
