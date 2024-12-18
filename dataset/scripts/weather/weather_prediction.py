@@ -16,7 +16,7 @@ output_folder = "./weather/stations"
 columns_remove_forecast = ['isDay','dewPoint2m']
 
 
-def get_weather_data_for_station(station_id):
+def get_weather_data_for_station(station_id, station_place):
     params = {
         "stationIds": station_id
     }
@@ -31,7 +31,7 @@ def get_weather_data_for_station(station_id):
     if response.status_code == 200:
         data = response.json()
         
-        filename = os.path.join(computing_folder, f"weather_forecast_{station_id}.json")
+        filename = os.path.join(computing_folder, f"weather_forecast_{station_place}.json")
         with open(filename, "w") as file:
             json.dump(data, file, indent=4)
         print(f"Die Wettervorhersage wurde in {filename} gespeichert.")
@@ -81,16 +81,16 @@ def get_weather_data_for_station(station_id):
             #Date ins richte Foramt konvertieren
             df["date"] = df["date"].apply(lambda x: x.strftime("%Y%m%d%H"))
 
-            df.to_csv(os.path.join(output_folder, f"weather_forecast_{station_id}.csv"), index=False)
-            print(f"Die Wettervorhersage wurde in weather_forecast_{station_id}.csv konvertiert")
+            df.to_csv(os.path.join(output_folder, f"weather_forecast_{station_place}.csv"), index=False)
+            print(f"Die Wettervorhersage wurde in weather_forecast_{station_place}.csv konvertiert")
     else:
         print(f"Fehler bei der Anfrage: {response.status_code}")
 
 
-def download_weatherforecast_data_for_all_stations(station_ids):
-    for station_id in station_ids:
+def download_weatherforecast_data_for_all_stations(station_ids, station_places):
+    for (station_id , station_place) in zip(station_ids, station_places):
         print(f"Starte den Download für Station {station_id}...")
-        get_weather_data_for_station(station_id)
+        get_weather_data_for_station(station_id, station_place)
         print()
 
 def remove_columns():
@@ -115,7 +115,9 @@ def remove_columns():
 
 #Wird nur ausgeführt, wenn scrpit direkt ausgeführt
 if __name__ == "__main__":
-    station_ids = ["10453", "O457", "10506"]
+    station_ids_r = ["00722", "01262", "01975", "02667", "02932"]
+    station_ids_f = ["10453", "10870", "10147", "10513", "10469"]
+    station_place = ["Brocken", "Muenchen", "Hamburg", "KoelnBonn", "LeipzigHalle"]
     #station_ids = ["10453", "10870", "10147", "10513", "10469"]
-    download_weatherforecast_data_for_all_stations(station_ids)
-    #remove_columns()
+    download_weatherforecast_data_for_all_stations(station_ids_f, station_place)
+    remove_columns()

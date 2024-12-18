@@ -168,7 +168,7 @@ verstrichene_zeit = end - start
 print(f'Ausführungszeit: {verstrichene_zeit} Sekunden')
 
 #Starte Vorhersagen-Download
-weather_prediction.download_weatherforecast_data_for_all_stations(station_ids_f)
+weather_prediction.download_weatherforecast_data_for_all_stations(station_ids_f, station_place)
 weather_prediction.remove_columns()
 
 end = time.time()
