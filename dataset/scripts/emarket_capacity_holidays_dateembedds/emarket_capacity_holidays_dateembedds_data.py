@@ -59,6 +59,14 @@ class DataUpdater:
                                                country_code=country).resample('h').mean()
         load = client.query_load(start=self.timestamp_from, end=self.timestamp_to, country_code=country).resample(
             'h').mean()
+        #data patch for the last 2 periods for load which are normally non existing
+        idx_na = self.current_data.loc[self.current_data['actual_load'].isna()].index
+        if len(idx_na) > 0:
+            load_patch = client.query_load(start=self.timestamp_from - pd.Timedelta(hours=2), end=self.timestamp_from, country_code=country).resample(
+            'h').mean()
+            for i in idx_na:
+                self.current_data.at[i,'actual_load'] = load_patch.loc[i]
+
         self.entsoe_data = pd.concat((prices, fcst_load, load), axis=1)
 
     def update_date_embedding(self):
@@ -143,7 +151,8 @@ class DataUpdater:
                           'Nuclear', 'Other', 'Other renewable', 'Waste']
 
         print('extracting capacities [2/2]...')
-        y_cap = client.query_installed_generation_capacity(start=self.timestamp_from, end=self.timestamp_to,
+        start_of_year = pd.to_datetime(f"{self.timestamp_from.year}-01-01").tz_localize('Europe/Brussels')
+        y_cap = client.query_installed_generation_capacity(start=start_of_year, end=self.timestamp_to,
                                                            country_code=country, psr_type=None)
         y_cap = y_cap[[col for col in columns_entsoe if col in y_cap]]  # flexibly include Nuclear for example
 
