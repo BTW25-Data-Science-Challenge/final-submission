@@ -103,7 +103,7 @@ class BenchmarkMaker:
     def plot_rmse_per_day(self):
         for k in self.predictions_data.keys():
             days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(names='date')
-            plt.scatter(days_df['timestamp'], np.sqrt(days_df['SE']))
+            plt.plot(days_df['timestamp'], np.sqrt(days_df['SE']), label=str(k))
         plt.xticks(rotation=45)
         plt.title('RMSE per Day')
         plt.xlabel('Timestamp')
@@ -117,7 +117,7 @@ class BenchmarkMaker:
     def plot_mae_per_day(self):
         for k in self.predictions_data.keys():
             days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(names='date')
-            plt.scatter(days_df['timestamp'], np.sqrt(days_df['AE']))
+            plt.plot(days_df['timestamp'], np.sqrt(days_df['AE']), label=str(k))
         plt.xticks(rotation=45)
         plt.title('MAE per Day')
         plt.xlabel('Timestamp')
@@ -128,7 +128,56 @@ class BenchmarkMaker:
             plt.savefig(self.export_dir + '\\' + 'daily_mae.png')
         plt.show(block=True)
 
-    def plot_compare_predictions(self):
-        pass
+    def plot_compare_mae(self):
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
 
+        mae_values = []
+        names = []
+        for i, pred_model in enumerate(self.predictions_data.keys()):
+            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+            mae = self.calc_mae(gt_values, pred_values)
+            mae_values.append(mae)
+            names.append(str(pred_model))
+        x = np.arange(len(self.predictions_data.keys()))
 
+        ax = plt.subplot(111)
+        bar = ax.bar(x, mae_values, width=0.4, align='center', label='MAE')
+
+        def digit_label(rects):
+            for rect in rects:
+                h = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, f'{int(h)}',
+                        ha='center', va='bottom', color=rect.get_facecolor())
+        digit_label(bar)
+        ax.set_xticklabels(names)
+        ax.set_ylim([0, max(mae_values) + 2])
+        if self.export_dir is not None:
+            plt.savefig(self.export_dir + '\\' + 'compare_mae.png')
+        plt.show(block=True)
+
+    def plot_compare_rmse(self):
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
+
+        rmse_values = []
+        names = []
+        for i, pred_model in enumerate(self.predictions_data.keys()):
+            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+            rmse = self.calc_rmse(gt_values, pred_values)
+            rmse_values.append(rmse)
+            names.append(str(pred_model))
+        x = np.arange(len(self.predictions_data.keys()))
+
+        ax = plt.subplot(111)
+        bar = ax.bar(x, rmse_values, width=0.4, align='center', label='RMSE')
+
+        def digit_label(rects):
+            for rect in rects:
+                h = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, f'{int(h)}',
+                        ha='center', va='bottom', color=rect.get_facecolor())
+        digit_label(bar)
+        ax.set_xticklabels(names)
+        ax.set_ylim([0, max(rmse_values) + 2])
+        if self.export_dir is not None:
+            plt.savefig(self.export_dir + '\\' + 'compare_rmse.png')
+        plt.show(block=True)
