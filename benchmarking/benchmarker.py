@@ -1,9 +1,9 @@
 import pandas as pd
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import random
 
 
 class BenchmarkMaker:
@@ -19,9 +19,17 @@ class BenchmarkMaker:
         self.predictions_data = {n: data[n] for n in data.keys() if n != self.gt_name.replace('.csv', '')}   # prediction results Dataframes
         self.ground_truth_data = data[self.gt_name.replace('.csv', '')]   # gt df
 
-        pred_data = self.predictions_data['biLSTM_prediction']
-        r = np.random.randint(low=-1, high=10, size=pred_data.shape[0])
-        pred_data['day_ahead_prices_predicted'] = pred_data['day_ahead_prices_predicted'].values + r
+        # pred_data = self.ground_truth_data.copy(deep=True)
+        # r = np.random.randint(low=-10, high=10, size=pred_data.shape[0])
+        # pred_data['day_ahead_prices_predicted'] = pred_data['day_ahead_prices'].values + r
+        # pred_data = pred_data.drop('day_ahead_prices', axis=1)
+        # pred_data.to_csv(curr_dir + '\\' + config['input_dir'] + '\\' + 'biLSTM_prediction.csv')
+        #
+        # pred_data = self.ground_truth_data.copy(deep=True)
+        # r = np.random.randint(low=-10, high=10, size=pred_data.shape[0])
+        # pred_data['day_ahead_prices_predicted'] = pred_data['day_ahead_prices'].values + r
+        # pred_data = pred_data.drop('day_ahead_prices', axis=1)
+        # pred_data.to_csv(curr_dir + '\\' + config['input_dir'] + '\\' + 'XGBoost_prediction.csv')
 
         # calculate errors for each model prediction
         self.__calc_errors()
@@ -29,8 +37,6 @@ class BenchmarkMaker:
         # combine dataframes
         self.full_df = None
         self.__create_full_df()
-
-        pass
 
     def __load_data(self, dir, file_names, tz):
         data = {n.replace('.csv', ''): pd.read_csv(dir + '\\' + n, index_col=0) for n in file_names}
@@ -43,15 +49,15 @@ class BenchmarkMaker:
         return data
 
     def __create_full_df(self):
-
         pass
 
     def __calc_errors(self):
-        gt_values = self.ground_truth_data['day_ahead_prices']
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
         for pred_model in self.predictions_data.keys():
-            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted']
+            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
             self.predictions_data[pred_model]['RMSE'] = self.calc_rmse(gt_values, pred_values)
             self.predictions_data[pred_model]['MAE'] = self.calc_mae(gt_values, pred_values)
+            self.predictions_data[pred_model]['MAPE'] = self.calc_mape(gt_values, pred_values)
             self.predictions_data[pred_model]['SE'] = self.calc_squared_error(gt_values, pred_values)
             self.predictions_data[pred_model]['AE'] = self.calc_absolute_error(gt_values, pred_values)
         pass
@@ -73,9 +79,15 @@ class BenchmarkMaker:
         mae = mean_absolute_error(actual_values, predicted_values)
         return mae
 
+    def calc_mape(self, actual_values, predicted_values):
+        scaler = StandardScaler()
+        y_true_scaled = scaler.fit_transform(actual_values.reshape(-1, 1)).flatten()
+        y_pred_scaled = scaler.transform(predicted_values.reshape(-1, 1)).flatten()
+        mape = mean_absolute_percentage_error(y_true_scaled, y_pred_scaled)
+        return mape
+
     def plot_rmse_per_hour(self):
         for k in self.predictions_data.keys():
-            self.predictions_data[k] = self.predictions_data[k][:1000]
             plt.plot(self.predictions_data[k]['timestamp'], np.sqrt(self.predictions_data[k]['SE']), label=str(k))
         plt.xticks(rotation=45)
         plt.title('RMSE per Hour')
@@ -141,7 +153,9 @@ class BenchmarkMaker:
         x = np.arange(len(self.predictions_data.keys()))
 
         ax = plt.subplot(111)
-        bar = ax.bar(x, mae_values, width=0.4, align='center', label='MAE')
+        my_cmap = plt.get_cmap("jet")
+        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
+        bar = ax.bar(x, mae_values, width=0.4, align='center', label='MAE', color=my_cmap(rescale(mae_values)))
 
         def digit_label(rects):
             for rect in rects:
@@ -149,8 +163,13 @@ class BenchmarkMaker:
                 ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, f'{int(h)}',
                         ha='center', va='bottom', color=rect.get_facecolor())
         digit_label(bar)
+        plt.title('MAE per Model')
+        ax.set_ylabel('MAE')
+        ax.set_xlabel('Model')
+        ax.set_xticks(x)
         ax.set_xticklabels(names)
         ax.set_ylim([0, max(mae_values) + 2])
+        plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_mae.png')
         plt.show(block=True)
@@ -164,11 +183,13 @@ class BenchmarkMaker:
             pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
             rmse = self.calc_rmse(gt_values, pred_values)
             rmse_values.append(rmse)
-            names.append(str(pred_model))
+            names.append(str(pred_model).replace('_prediction', ''))
         x = np.arange(len(self.predictions_data.keys()))
 
         ax = plt.subplot(111)
-        bar = ax.bar(x, rmse_values, width=0.4, align='center', label='RMSE')
+        my_cmap = plt.get_cmap("jet")
+        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
+        bar = ax.bar(x, rmse_values, width=0.4, align='center', label='RMSE', color=my_cmap(rescale(rmse_values)))
 
         def digit_label(rects):
             for rect in rects:
@@ -176,8 +197,48 @@ class BenchmarkMaker:
                 ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, f'{int(h)}',
                         ha='center', va='bottom', color=rect.get_facecolor())
         digit_label(bar)
+        plt.title('RMSE per Model')
+        ax.set_ylabel('RMSE')
+        ax.set_xlabel('Model')
+        ax.set_xticks(x)
         ax.set_xticklabels(names)
         ax.set_ylim([0, max(rmse_values) + 2])
+        plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_rmse.png')
         plt.show(block=True)
+
+    def plot_compare_mape(self):
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
+
+        mape_values = []
+        names = []
+        for i, pred_model in enumerate(self.predictions_data.keys()):
+            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+            mape = self.calc_mape(gt_values, pred_values)
+            mape_values.append(mape*100)
+            names.append(str(pred_model).replace('_prediction', ''))
+        x = np.arange(len(self.predictions_data.keys()))
+
+        ax = plt.subplot(111)
+        my_cmap = plt.get_cmap("jet")
+        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
+        bar = ax.bar(x, mape_values, width=0.4, align='center', label='MAPE', color=my_cmap(rescale(mape_values)))
+
+        def digit_label(rects):
+            for rect in rects:
+                h = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * h, f'{int(h)}',
+                        ha='center', va='bottom', color=rect.get_facecolor())
+        digit_label(bar)
+        plt.title('MAPE per Model')
+        ax.set_ylabel('MAPE in %')
+        ax.set_xlabel('Model')
+        ax.set_xticks(x)
+        ax.set_xticklabels(names)
+        ax.set_ylim([0, 100])
+        plt.tight_layout()
+        if self.export_dir is not None:
+            plt.savefig(self.export_dir + '\\' + 'compare_mape.png')
+        plt.show(block=True)
+
