@@ -318,22 +318,22 @@ market_id={
 }
 
 ##weather
-#Definiere abzufragende Stationen
+#Define stations
 combine_historicforecast_bool =False
 station_ids_r = [ "01262", "01975", "02667"]
 station_ids_f = [ "10870", "10147", "10513"]
 station_place = [ "Muenchen", "Hamburg", "KoelnBonn" ]
-#Ordnerstruktur für die Brechnung und Ausgabe
+#folderstructure
 output_folder = "./merged_data/scripts/weather/"
 station_folder = "./merged_data/scripts/weather/stations"
 computing_folder = "./merged_data/scripts/weather/computing_folder"
 stations_combined = "./merged_data/scripts/weather/stations_combined"
 data_collection_folder="../final-submission/merged_data/data_collection"
 forecas_folder="../final-submission/merged_data/forecast"
-#Basis-URL für die DWD Wetterdaten
+#Basis-URL for dwd-data
 base_url_review = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/"
 url_forecast = "https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended"
-# Nicht benötigte Spalten   
+#collums to remove
 columns_remove_clouds = ["STATIONS_ID","eor", "QN_8","V_N_I"]
 columns_remove_pressure = ["STATIONS_ID","eor", "QN_8"]
 columns_remove_sun = ["STATIONS_ID","eor", "QN_7"]
@@ -342,7 +342,7 @@ columns_remove_wind = ["STATIONS_ID","eor", "QN_3"]
 columns_remove_precipitation = ["STATIONS_ID","eor", "QN_8", "WRTR", "RS_IND"]
 
 columns_remove_forecast = ['isDay','dewPoint2m']
-#URL Endungen für die Vergangenheit
+#URL-endings for historical data
 data_types = {
     "temperature_historical": "air_temperature/historical/",
     "temperature_recent": "air_temperature/recent/",
@@ -357,7 +357,7 @@ data_types = {
     "precipitation_recent": "precipitation/recent/",
     "precipitation_historical": "precipitation/historical/",
 }
-#header für Api zugriff 
+#header for API
 headers_weather = {
     "accept": "application/json"
 }
@@ -504,7 +504,6 @@ def fetch_save_data(query_func, save_path, rename_columns=None, transform_func=N
     if transform_func:
         data = transform_func(data)
 
-    # Formatierung der Datetime-Spalte
     data['Date'] = data['Date'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
     save_df_with_timestamp(data, save_path)
@@ -707,127 +706,114 @@ def merge(fin_df, work_df, i):
 
 
 ##weather
-#Definitionen der Funktionen vom Basiswetterskript
+#Definitions of funktions for weather
 def combine_historic(station_r, place): 
-  #Kombiniere die Dateien paarweise
+  #combine data
   try:
     file_r = os.path.join(station_folder, station_r, f"{station_r}_data_combined.csv")
     
-    #Daten einlesen
+    #read data
     df_r = pd.read_csv(file_r)
     combined_df=df_r
-    #Ausgabe-Dateiname
     output_file = os.path.join(stations_combined, f"{place}_review.csv")
     combined_df.to_csv(output_file, index=False)
 
-    print(f"Kombiniert: {station_r} -> {output_file}")
+    print(f"Comibe: {station_r} -> {output_file}")
 
   except FileNotFoundError as e:
-    print(f"Datei nicht gefunden: {e}")
+    print(f"File not found: {e}")
   except Exception as e:
-    print(f"Fehler beim Verarbeiten von {station_r}: {e}")
+    print(f"Error while computing{station_r}: {e}")
 def combine_all_stations():
   files = [f for f in os.listdir(stations_combined) if f.endswith('.csv')]
 
-  #Umbennenen der Spalten nach Stationsnamen
+  #rename collums to station name
   for file in files:
     file_path = os.path.join(stations_combined, file)
     df = pd.read_csv(file_path)
-    #Extrahiere den Dateinamen
+    #extract filename
     file_name = os.path.splitext(file)[0]
     columname=[df.columns[0]] + [f'{col}_{file_name}' for col in df.columns[1:]]
     df.columns = columname
-    print(f'Spalten umbennant für {file_name}')
-    #station_column_filename = os.path.join(stations_combined, file_name)
+    print(f'Renamend collums for {file_name}')
     df.to_csv(file_path, index=False)
 
-  #Verbinde alle DataFrames nebeneinander  
+  #combine dataframes  
   all_data_frames = []
   for file in files:
     file_path = os.path.join(stations_combined, file)  
     
-    #Lade Daten aus Datei und füge sie zur Liste
+    #load data and add to list
     try:
       df = pd.read_csv(file_path, delimiter=",", parse_dates=["date"], date_format="%Y%m%d%H")
       all_data_frames.append(df)
-      print(f"Daten hinzugefügt von: {file_path}")
+      print(f"Add data from: {file_path}")
     except Exception as e:
-      print(f"Fehler beim Laden der Datei {file}: {e}")
+      print(f"Error while loading {file}: {e}")
   
-  #Wenn geladen wurden -> kombiniere
+  #if loaded -> combine
   if all_data_frames:
     combined_data = all_data_frames[0]
     for df in all_data_frames[1:]:
-      #Test MESS_DATUM als Datum
       df["date"] = pd.to_datetime(df["date"], errors="coerce")                
-      #Daten zusammenführen
       combined_data = pd.merge(combined_data, df, on=[  "date"], how="outer")
-
-    #Sortieren und doppelte löschen
     combined_data = combined_data.sort_values(by=[  "date"]).drop_duplicates(subset=[  "date"], keep='last')
 
-  #Speichern
+  #save
   final_filename = os.path.join(data_collection_folder, f"weather.csv")
   combined_data.to_csv(final_filename, index=False)
-  print(f"Alle kombinierten Daten gespeichert in: {final_filename}")
+  print(f"Combined data saved: {final_filename}")
 def start_combine_historic():
-    max_workers = min(os.cpu_count(), len(station_ids_r))  #Maximal so viele Stationen wie vorhanden oder CPU Anzahl
-    print(f"Starte die Verknüfung aller Daten für {len(station_ids_r)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids_r))  
+    print(f"Start cmbination of {len(station_ids_r)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(combine_historic, station_r, place): (station_r,  place) for station_r,  place in zip(station_ids_r,  station_place) }    
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Dateien verknüpft aller Daten für Station {station_id}.")
+                future.result()
+                print(f"All data combined for {station_id}.")
             except Exception as e:
-                print(f"Fehler beim Verknüfung aller Daten für Station {station_id}: {e}")
+                print(f"Error while combination of station {station_id}: {e}")
 def combine_forecast():
 
   files = [f for f in os.listdir(station_folder) if f.endswith('.csv')]
 
-  #Umbennenen der Spalten nach Stationsnamen
+  #rename collumns to stationname
   for file in files:
     file_path = os.path.join(station_folder, file)
     df = pd.read_csv(file_path)
-    #Extrahiere den Dateinamen
+    #extract filename
     file_name = os.path.splitext(file)[0]
     columname=[df.columns[0]] + [f'{col}_{file_name}' for col in df.columns[1:]]
     df.columns = columname
-    print(f'Spalten umbennant für {file_name}')
-    #station_column_filename = os.path.join(stations_combined, file_name)
+    print(f'renamed collums for {file_name}')
     df.to_csv(file_path, index=False)
-
-  #Verbinde alle DataFrames nebeneinander  
+ 
   all_data_frames = []
   for file in files:
     file_path = os.path.join(station_folder, file)  
     
-    #Lade Daten aus Datei und füge sie zur Liste
+    #load data and add to list
     try:
       df = pd.read_csv(file_path, delimiter=",", parse_dates=["date"], date_format="%Y%m%d%H")
       all_data_frames.append(df)
-      print(f"Daten hinzugefügt von: {file_path}")
+      print(f"data added from {file_path}")
     except Exception as e:
-      print(f"Fehler beim Laden der Datei {file}: {e}")
+      print(f"Error while loading file {file}: {e}")
   
-  #Wenn geladen wurden -> kombiniere
+   
   if all_data_frames:
     combined_data = all_data_frames[0]
     for df in all_data_frames[1:]:
-      #Test MESS_DATUM als Datum
-      df["date"] = pd.to_datetime(df["date"], errors="coerce")                
-      #Daten zusammenführen
+      df["date"] = pd.to_datetime(df["date"], errors="coerce")
       combined_data = pd.merge(combined_data, df, on=[  "date"], how="outer")
-
-    #Sortieren und doppelte löschen
     combined_data = combined_data.sort_values(by=[  "date"]).drop_duplicates(subset=[  "date"], keep='last')
 
 
   final_filename = os.path.join(forecas_folder, f"weather_forecast.csv")
   combined_data.to_csv(final_filename, index=False)
-  print(f"Kombinierter Forecast gespeichert in: {final_filename}")
+  print(f"Saved combined forecast: {final_filename}")
 def create_folder():
   os.makedirs(computing_folder, exist_ok=True)
   os.makedirs(stations_combined, exist_ok=True)
@@ -837,33 +823,25 @@ def create_folder():
     station_folder =os.path.join(output_folder,'stations',station)
     os.makedirs(station_folder, exist_ok=True)
 
-#Wetter Reviewfunktionen:
-#Funktion zur Suche und Herunterladen der Wetterdaten pro Station
+#function to load forecast
 def station_folderget_weather_data_for_station_review(station_id):
-    #os.makedirsrs(computing_folder, exist_ok=True)
-    #os.makedirsrs(station_folder, exist_ok=True)
     output_filepath = os.path.join(computing_folder,station_id)
-    #os.makedirsrs(output_filepath, exist_ok=True)
-    print(f"Speicherort {output_filepath}, computing_folder {computing_folder}, station_id {station_id}")    
+    print(f"storage location  {output_filepath}, computing_folder {computing_folder}, station_id {station_id}")    
     for data_type, endpoint in data_types.items():
         url = base_url_review + endpoint
-        
-        #Esrtellt Liste von Dateien im Verzeichnis
         response = requests.get(url)
         response.raise_for_status()
 
-        #Suche nach passender ZIP-Datei
+        #lookup zip-file
         for line in response.text.splitlines():
             if station_id in line and "zip" in line:
                 filename = re.search(r'href="(.*?)"', line).group(1)
                 file_url = url + filename
                 
-                #Lade ZIP-Datei herunter
                 print(f"Lade herunter: {file_url}")
                 file_response = requests.get(file_url)
                 file_response.raise_for_status()
-                
-                #Entpacke ZIP-Datei und suche passender TXT-Datei in der ZIP
+
                 with zipfile.ZipFile(io.BytesIO(file_response.content)) as z:
                     if data_type == "cloudiness_historical" or data_type == "cloudiness_recent":
                         txt_files = [name for name in z.namelist() if re.match(r'produkt_n_stunde_\d{8}_\d{8}_' + station_id + r'\.txt', name)]
@@ -882,20 +860,14 @@ def station_folderget_weather_data_for_station_review(station_id):
                         print(f"Keine TXT-Datei im erwarteten Format für Station {station_id} gefunden.")
                         continue  
 
-                    #Wenn TXT-Datei gefunden wurde, lade sie in pandas
                     txt_filename = txt_files[0]
                     with z.open(txt_filename) as f:
-                        #Test ob ladbar
                         try:
                             df = pd.read_csv(f, sep=";", encoding="utf-8")
                             if df.empty:
                                 print(f"Warnung: Die Datei {txt_filename} ist leer.")
                             else:
                                 print("Daten geladen für:", txt_filename)
-
-                                #Ausgabeordener checken
-
-                                #Dateinamen nach Datenart setzen
                                 if data_type == "temperature_historical":
                                     new_filename = f"temp_{station_id}_hist.txt"
                                 elif data_type == "temperature_recent":
@@ -919,31 +891,27 @@ def station_folderget_weather_data_for_station_review(station_id):
                                 elif data_type == "precipitation_historical":
                                     new_filename = f"precipitation_{station_id}_hist.txt"
                                 elif data_type == "precipitation_recent":
-                                    new_filename = f"precipitation_{station_id}_recent.txt"                                
-                                
-                                #Speichere TXT-Datei im angegebenen Ordner
-                                #print(f"Speicherort {output_filepath}, computing_folder {computing_folder}, station_id {station_id}, new_filename {new_filename}")
+                                    new_filename = f"precipitation_{station_id}_recent.txt"
                                 output_filename = os.path.join(output_filepath, new_filename)                                
                                 df.to_csv(output_filename, sep=";", encoding="utf-8", index=False)
-                                print(f"Wetterdaten gespeichert unter: {output_filepath}")   
-                                print(f"Die Datei wurde erfolgreich gespeichert unter: {os.path.abspath(output_filepath)}")
+                                print(f" Saved weather-file as: {output_filepath}")   
+                                print(f" Saved file as: {os.path.abspath(output_filepath)}")
                         except Exception as e:
-                            print(f"Fehler beim Laden der Datei {txt_filename}: {e}")
+                            print(f"Error while loading file {txt_filename}: {e}")
     cut_historic_bevor_2015(station_id)
-#Funktion zum Herunterladen der Wetterdaten für alle angegebenen Stationen
+
 def download_weather_data_for_all_stations_review(station_ids):
-    max_workers = min(os.cpu_count(), len(station_ids))  #Maximal 10 Threads oder so viele Stationen wie vorhanden
-    print(f"Starte den Download für {len(station_ids)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids))   
+    print(f"Start doanload of {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(station_folderget_weather_data_for_station_review, station_id): station_id for station_id in station_ids}        
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Download abgeschlossen für Station {station_id}.")
+                future.result()
+                print(f"download succeded for{station_id}.")
             except Exception as e:
-                print(f"Fehler beim Herunterladen von Daten für Station {station_id}: {e}")
+                print(f"Error while downloading {station_id}: {e}")
 def cut_historic_bevor_2015(station_id):
     computing_folder_station = os.path.join(computing_folder, station_id)
     station_files = [f for f in os.listdir(computing_folder_station) if re.match(r'(.+)_hist\.txt', f)]    
@@ -952,7 +920,6 @@ def cut_historic_bevor_2015(station_id):
         with open(file_path, 'r') as infile:
             lines = infile.readlines()
         
-        #Filtert Zeilen nach 2015 sind
         filtered_lines = []
         for line in lines[:1]:
             filtered_lines.append(line)
@@ -964,26 +931,24 @@ def cut_historic_bevor_2015(station_id):
                 if year >= 2015:
                     filtered_lines.append(line)
 
-        #Schreibe Zeilen in die Datei zurück
         with open(file_path, 'w') as outfile:
             outfile.writelines(filtered_lines)
         print(f"Historisch bis 2015 gekürzt: {file}")
-    
-    #Aufruf nur benutzen, wenn start_... in weather nicht ausgeführt wird
     remove_columns_review(station_id)
+
 def start_cut_historic_bevor_2015(station_ids):
-    max_workers = min(os.cpu_count(), len(station_ids))  #Maximal 10 Threads oder so viele Stationen wie vorhanden
-    print(f"Starte die Kürzung bis 2015 für {len(station_ids)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids))   
+    print(f"start shortening till 2015 for {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(cut_historic_bevor_2015, station_id): station_id for station_id in station_ids}        
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Dateien bis 2015 gekürzt für Station {station_id}.")
+                future.result()
+                print(f"Files shortend to 2015 for {station_id}.")
             except Exception as e:
-                print(f"Fehler beim Kürzen bis 2015 für Station {station_id}: {e}")
+                print(f"Error while shortening files to 2015 for {station_id}: {e}")
+
 def remove_columns_review(station_id):
     print('Start Remove Columns')
     computing_folder_station =os.path.join(computing_folder, station_id)
@@ -997,91 +962,77 @@ def remove_columns_review(station_id):
     for file in clouds_files:
         file_path = os.path.join(computing_folder_station, file)        
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_clouds if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)
+            df = df.drop(columns=[col for col in columns_remove_clouds if col in df.columns])
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"Colums removed from{file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while processing{file}: {e}")
     
     for file in pressure_files:
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_pressure if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)
+            df = df.drop(columns=[col for col in columns_remove_pressure if col in df.columns])
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while prcessing file: {file}: {e}")
 
     for file in sun_files:
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_sun if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True) 
+            df = df.drop(columns=[col for col in columns_remove_sun if col in df.columns])
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while prcessing file: {file}: {e}")
 
     for file in temp_files:
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_temp if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while prcessing file: {file}: {e}")
 
     for file in wind_files:
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_wind if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True) 
+            df = df.drop(columns=[col for col in columns_remove_wind if col in df.columns]) 
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while prcessing file: {file}: {e}")
 
     for file in precipitation_files:
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_precipitation if col in df.columns])            
-            #Speichere modifizierte Datei
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)
+            df = df.drop(columns=[col for col in columns_remove_precipitation if col in df.columns])
             df.to_csv(file_path, sep=";", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
-
-    #Aufruf nur benutzen, wenn start_... in weather nicht ausgeführt wird
+            print(f"Error while prcessing file: {file}: {e}")
     combine_historic_recent(station_id)
+
 def start_remove_columns_review(station_ids):
-    max_workers = min(os.cpu_count(), len(station_ids))  #Maximal 10 Threads oder so viele Stationen wie vorhanden
-    print(f"Starte die Löschen von Spalten für {len(station_ids)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids))   
+    print(f"Start remove collumns {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(remove_columns_review, station_id): station_id for station_id in station_ids}        
@@ -1089,95 +1040,76 @@ def start_remove_columns_review(station_ids):
             station_id = future_to_station[future]
             try:
                 future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Spalten gelöscht für Station {station_id}.")
+                print(f"Collumns deleted for {station_id}.")
             except Exception as e:
-                print(f"Fehler beim Löschen von Spalten für Station {station_id}: {e}")
+                print(f"Error while deletion of collumns {station_id}: {e}")
 def combine_historic_recent(station_id):
-    computing_folder_station = os.path.join(computing_folder, station_id)    
-    #Suche nach Dateien für jeweilige Station
+    computing_folder_station = os.path.join(computing_folder, station_id)
     station_files = [f for f in os.listdir(computing_folder_station) if re.match(r'(.+)_' + station_id + r'_(hist|recent)\.txt', f)]
-    
-    #Gruppiere Dateien nach Wettertyp und Station-ID
     file_pairs = {}
     for file in station_files:
         match = re.match(r'(.+)_' + station_id + r'_(hist|recent)\.txt', file)
         if match:
-            wettertyp, period = match.groups()  #Wettertyp und Zeitraum
+            wettertyp, period = match.groups()
             key = f"{wettertyp}_{station_id}"
             if key not in file_pairs:
                 file_pairs[key] = {}
             file_pairs[key][period] = os.path.join(computing_folder_station, file)
 
-    #Führe historische und aktuelle Daten zusammen
+    #Fcombine historic an current data
     for key, file_pair in file_pairs.items():
         if 'hist' in file_pair and 'recent' in file_pair:
-            #Einlesen historische, aktuellen Daten
             hist_df = pd.read_csv(file_pair['hist'], delimiter=";")
             recent_df = pd.read_csv(file_pair['recent'], delimiter=";")
             hist_df["MESS_DATUM"] = pd.to_datetime(hist_df["MESS_DATUM"], format="%Y%m%d%H", errors="coerce")
             recent_df["MESS_DATUM"] = pd.to_datetime(recent_df["MESS_DATUM"], format="%Y%m%d%H", errors="coerce")
 
-            #Kombinieren Daten und entferne Duplikaten
+            
             combined_df = pd.concat([hist_df, recent_df]).drop_duplicates(subset=["MESS_DATUM"], keep='last')
             combined_df = combined_df.sort_values(by=["MESS_DATUM"])
             combined_df["MESS_DATUM"] = combined_df["MESS_DATUM"].dt.strftime("%Y%m%d%H")
 
-            #Speichern unter kombinierten Namen
             combined_filename = os.path.join(computing_folder_station, f"{key}_combined.txt")
             combined_df.to_csv(combined_filename, sep=";", index=False)
-            print(f"Kombinierte Datei gespeichert: {combined_filename}")
+            print(f"Combined data saved: {combined_filename}")
         else:
-            print(f"Fehlende Datei für {key}: entweder historische oder aktuelle Datei fehlt.")
-    
-    #Aufruf nur benutzen, wenn start_... in weather nicht ausgeführt wird
+            print(f"Missing file for {key}")
     combine_all_station_data_review(station_id)
+
 def start_combine_historic_recent(station_ids):
-    max_workers = min(os.cpu_count(), len(station_ids))  #Maximal 10 Threads oder so viele Stationen wie vorhanden
-    print(f"Starte die Verknüfung Historsich mit Aktuell für {len(station_ids)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids))   
+    print(f"Start combination of historic and current data for {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(combine_historic_recent, station_id): station_id for station_id in station_ids}        
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Dateien verknüpft Historsich mit Aktuell für Station {station_id}.")
+                future.result()
+                print(f"combined historic and current data for {station_id}.")
             except Exception as e:
-                print(f"Fehler beim Verknüfung Historsich mit Aktuell für Station {station_id}: {e}")
+                print(f"Error while combining historic and current data {station_id}: {e}")
 def combine_all_station_data_review(station_id):
     computing_folder_station = os.path.join(computing_folder, station_id)
     station_folder_station = os.path.join(station_folder, station_id) 
-    #os.makedirsrs(station_folder_station, exist_ok=True)  
-    #Suche nach Dateien mit dem Suffix "_combined" 
     combined_files = [f for f in os.listdir(computing_folder_station) if f.endswith(f"_{station_id}_combined.txt")]
     all_data_frames = []
-    #print(f"Combined Files: {combined_files}")
     for file in combined_files:
         file_path = os.path.join(computing_folder_station, file)
-        
-        #Lade Daten aus Datei und füge sie zur Liste
         try:
             df = pd.read_csv(file_path, delimiter=";", parse_dates=["MESS_DATUM"], date_format="%Y%m%d%H")
             all_data_frames.append(df)
-            print(f"Daten hinzugefügt von: {file_path}")
+            print(f"data added from {file_path}")
         except Exception as e:
-            print(f"Fehler beim Laden der Datei {file}: {e}")
-
-    #print("Alle Dateien geladen")
-    #Wenn geladen wurden -> kombiniere
+            print(f"Error while loading file {file}: {e}")
     if all_data_frames:
         combined_data = all_data_frames[0]
         for df in all_data_frames[1:]:
-            #Test MESS_DATUM als Datum
-            df["MESS_DATUM"] = pd.to_datetime(df["MESS_DATUM"], format="%Y%m%d%H", errors="coerce")                
-            #Daten zusammenführen
+            df["MESS_DATUM"] = pd.to_datetime(df["MESS_DATUM"], format="%Y%m%d%H", errors="coerce")
             combined_data = pd.merge(combined_data, df, on=[  "MESS_DATUM"], how="outer")
-
-        #Sortieren und doppelte löschen
         combined_data = combined_data.sort_values(by=[  "MESS_DATUM"]).drop_duplicates(subset=[  "MESS_DATUM"], keep='last')
         combined_data["MESS_DATUM"] = combined_data["MESS_DATUM"].dt.strftime("%Y%m%d%H")
         
-        # Header ändern
+        # change header
         header_mapping = {
             "STATIONS_ID": "STATIONS_ID",
             "MESS_DATUM": "date",
@@ -1196,49 +1128,41 @@ def combine_all_station_data_review(station_id):
         }
     
         combined_data.rename(columns=header_mapping, inplace=True)
-
-        #Speichern in Datei
         final_filename = os.path.join(station_folder_station, f"{station_id}_data_combined.csv")
         combined_data.to_csv(final_filename, sep=",", index=False)
-        print(f"Alle kombinierten Daten für Station {station_id} gespeichert in: {final_filename}")
+        print(f"All data combined for station {station_id} saved in: {final_filename}")
 
     else:
-        print(f"Keine kombinierten Dateien für Station {station_id} gefunden.")
+        print(f"No combined data for station {station_id} found.")
 def start_combine_all_station_data_review(station_ids):
-    max_workers = min(os.cpu_count(), len(station_ids))  #Maximal 10 Threads oder so viele Stationen wie vorhanden
-    print(f"Starte die Verknüfung aller Daten für {len(station_ids)} Stationen mit {max_workers} Threads.")
+    max_workers = min(os.cpu_count(), len(station_ids))   
+    print(f"Start of combination of data for {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(combine_all_station_data_review, station_id): station_id for station_id in station_ids}        
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
-                print(f"Dateien verknüpft aller Daten für Station {station_id}.")
+                future.result()
+                print(f"Files combined for {station_id}.")
             except Exception as e:
-                print(f"Fehler beim Verknüfung aller Daten für Station {station_id}: {e}")
+                print(f"Error while combination of station {station_id}: {e}")
 #Wetter Forecastfunktionen:
 def get_weather_data_for_station_forecast(station_id, station_place):
     params = {
         "stationIds": station_id
     }
-    #Anfrage vorbereiten
+    #prepare request
     request = requests.Request("GET", url_forecast, headers_weather=headers_weather, params=params)
     prepared_request = request.prepare()
     
     response = requests.Session().send(prepared_request)
-    #Ausgabeordener checken
-    #os.makedirs(computing_folder, exist_ok=True)
-    #os.makedirs(station_folder, exist_ok=True)
     if response.status_code == 200:
         data = response.json()
         
         filename = os.path.join(computing_folder, f"weather_forecast_{station_place}.json")
         with open(filename, "w") as file:
             json.dump(data, file, indent=4)
-        print(f"Die Wettervorhersage wurde in {filename} gespeichert.")
-        
-        #JSON-Daten laden und verarbeiten
+        print(f"Forecast was saved in {filename}")
         with open(filename) as file:
             data = json.load(file)
         
@@ -1257,60 +1181,47 @@ def get_weather_data_for_station_forecast(station_id, station_place):
                 "dewPoint2m": forecast_data.get("dewPoint2m", []),
                 "surfacePressure_hPa": forecast_data.get("surfacePressure", []),
                 "humidity_Percent": forecast_data.get("humidity", []),
-                "isDay_bool": forecast_data.get("isDay", []),
-                #"icon": forecast_data.get("icon", []),
-                #"icon1h": forecast_data.get("icon1h", [])
+                "isDay_bool": forecast_data.get("isDay", [])
             }
-            
-            #Alle Listen auf gleiche Länge bringen
             max_length = max(len(date), *(len(values) for values in variables.values()))
-            date.extend([None] * (max_length - len(date)))  # date auf max. Länge auffüllen
+            date.extend([None] * (max_length - len(date)))
             for key, values in variables.items():
-                variables[key].extend([None] * (max_length - len(values)))  # Werte-Listen auffüllen
-            
-            # DataFrame erstellen
+                variables[key].extend([None] * (max_length - len(values)))
             df = pd.DataFrame({
                 "date": date,
                 **variables
-            })
-
-            #DataFrame Temperatur von ZehntelGrad in Grad             
+            })             
             df["T_temperature_C"] = df["T_temperature_C"].apply(lambda x: x / 10 if pd.notnull(x) else x)
             df["T_temperature_standarddeviation_C"] = df["T_temperature_standarddeviation_C"].apply(lambda x: x / 10 if pd.notnull(x) else x)
             df["surfacePressure_hPa"] = df["surfacePressure_hPa"].apply(lambda x: x / 10 if pd.notnull(x) else x)
             df["humidity_Percent"] = df["humidity_Percent"].apply(lambda x: x / 10 if pd.notnull(x) else x)
-
-            #Date ins richte Foramt konvertieren
             df["date"] = df["date"].apply(lambda x: x.strftime("%Y%m%d%H"))
-
             df.to_csv(os.path.join(station_folder, f"weather_forecast_{station_place}.csv"), index=False)
-            print(f"Die Wettervorhersage wurde in weather_forecast_{station_place}.csv konvertiert")
+            print(f"Weather prediction in weather_forecast_{station_place}.csv convertet")
     else:
-        print(f"Fehler bei der Anfrage: {response.status_code}")
+        print(f"Error while request {response.status_code}")
 def download_weatherforecast_data_for_all_stations_forecast(station_ids, station_places):
     for (station_id , station_place) in zip(station_ids, station_places):
-        print(f"Starte den Download für Station {station_id}...")
+        print(f"Start download of Station {station_id}...")
         get_weather_data_for_station_forecast(station_id, station_place)
         print()
 def remove_columns_forecast():
-    print("Starte den Spaltenentfernumg")
+    print("Start removing columns")
     forecast_files = [f for f in os.listdir(station_folder) if f.startswith("weather_forecast_")]  
     print(f"File: {forecast_files}...")
     for file in forecast_files:
-        print(f"Starte den Spaltenentfernumg für {file}...")
+        print(f"Start removing columns for {file}...")
         file_path = os.path.join(station_folder, file)
         
         try:
             df = pd.read_csv(file_path, delimiter=",", skipinitialspace=True)  
-            print(f"Spalten im DataFrame: {list(df.columns)}")          
-            #Entferne die Spalten, ganz oben definiert
-            df = df.drop(columns=[col for col in columns_remove_forecast if col in df.columns])     
-            #Speichere modifizierte Datei
+            print(f"Columns in dataframe: {list(df.columns)}") 
+            df = df.drop(columns=[col for col in columns_remove_forecast if col in df.columns])
             df.to_csv(file_path, sep=",", index=False)
-            print(f"Spalten aus {file} entfernt.")
+            print(f"removed collums from {file}")
         
         except Exception as e:
-            print(f"Fehler beim Verarbeiten der Datei {file}: {e}")
+            print(f"Error while prcessing file: {file}: {e}")
 
 
 
@@ -1340,7 +1251,7 @@ print("CSV files have been merged and saved.")
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit nach Stockmarket: {verstrichene_zeit} Sekunden')
+print(f'execution time Stockmarket: {verstrichene_zeit} seconds')
 
 ##entsoe
 start_time_entsoe = time.time()
@@ -1348,7 +1259,7 @@ start_fetch_save_data(tasks)
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'Ausführungszeit nach fetch_save: {verstrichene_zeit_entsoe} Sekunden')
+print(f'execution time fetch_save: {verstrichene_zeit_entsoe} seconds')
 
 #Combining all datasets
 df_list = [pd.read_csv(task['save_path']) for task in tasks]
@@ -1358,20 +1269,20 @@ for df in df_list[1:]:
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'Ausführungszeit nach Merge vor save als csv: {verstrichene_zeit_entsoe} Sekunden')
+print(f'execution time Merge vor save als csv: {verstrichene_zeit_entsoe} seconds')
 
 merged_df.to_csv(f'{out_dir}/merged_data_multi_2.csv', index=False)
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'Ausführungszeit nach Merge_to_csv: {verstrichene_zeit_entsoe} Sekunden')
+print(f'execution time Merge_to_csv: {verstrichene_zeit_entsoe} seconds')
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'Ausführungszeit komplett: {verstrichene_zeit_entsoe} Sekunden')
+print(f'execution time: {verstrichene_zeit_entsoe} seconds')
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit nach Entsoe: {verstrichene_zeit} Sekunden')
+print(f'execution time Entsoe: {verstrichene_zeit} seconds')
 
 ##Covid Lockdown Data
 # generate and populate dataframe with all dates from 2015-1-1 - today
@@ -1399,7 +1310,7 @@ covid_factors_df.to_csv('../final-submission/merged_data/data_collection/covid.c
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit nach Covidzahlen: {verstrichene_zeit} Sekunden')
+print(f'execution time Covidzahlen: {verstrichene_zeit} seconds')
 
 ##Smard
 output_path = '../final-submission/merged_data/data_collection/smard.csv'
@@ -1443,48 +1354,42 @@ final_df.to_csv(output_pathgz, sep=',', index=False, compression='gzip')
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit nach Smard: {verstrichene_zeit} Sekunden')
+print(f'execution time Smard: {verstrichene_zeit} seconds')
 
 ##weather
-#Starte Download und Verarbeitung der Wetterdaten
-start_time_w = time.time()
-#Erstelle die Ordner
-create_folder()
 
-#Starte Rückblick-Download
+start_time_w = time.time()
+create_folder()
 download_weather_data_for_all_stations_review(station_ids_r)
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
+print(f'execution time weather: {verstrichene_zeit} seconds')
 
-#Starte Vorhersagen-Download
 download_weatherforecast_data_for_all_stations_forecast(station_ids_f, station_place)
 remove_columns_forecast()
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
+print(f'execution time weather: {verstrichene_zeit} seconds')
 
-#Kombiniere die historischen und vorhergesagten Daten
 start_combine_historic()
 enend_time_wd = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
-#Alle Stationen kombinieren
+print(f'execution time weather: {verstrichene_zeit} seconds')
 combine_all_stations()
 combine_forecast()
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
+print(f'execution time weather: {verstrichene_zeit} seconds')
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit nach dem Wetter: {verstrichene_zeit} Sekunden')
+print(f'execution time dem Wetter: {verstrichene_zeit} seconds')
 
 
-##Zusammenfassung
+
 df_res = pd.read_csv('../final-submission/merged_data/data_collection/merged_data.csv')
 df_ens = pd.read_csv('../final-submission/merged_data/data_collection/merged_data3.csv')
 df_smard = pd.read_csv('../final-submission/merged_data/data_collection/smard.csv')
@@ -1523,4 +1428,4 @@ print("CSV files have been merged and saved.")
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'Ausführungszeit komplett: {verstrichene_zeit} Sekunden')
+print(f'execution time: {verstrichene_zeit} seconds')
