@@ -79,7 +79,14 @@ class BenchmarkMaker:
         mae = mean_absolute_error(actual_values, predicted_values)
         return mae
 
-    def calc_mape(self, actual_values, predicted_values):
+    def calc_mape(self, actual_values: np.ndarray, predicted_values: np.ndarray) -> float:
+        """calculate mean average percentage error.
+        close to 0: good
+        close to 1: bad
+
+        :param actual_values: correct underlying values
+        :param predicted_values: forecasted values
+        :return: mape"""
         scaler = StandardScaler()
         y_true_scaled = scaler.fit_transform(actual_values.reshape(-1, 1)).flatten()
         y_pred_scaled = scaler.transform(predicted_values.reshape(-1, 1)).flatten()
@@ -138,6 +145,48 @@ class BenchmarkMaker:
         plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'daily_mae.png')
+        plt.show(block=True)
+
+    def plot_compare_predictions_hourly(self):
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
+        timestamps = self.ground_truth_data['timestamp'].values
+        plt.plot(timestamps, gt_values, label='Actual Values')
+
+        for k in self.predictions_data.keys():
+            timestamps = self.predictions_data[k]['timestamp'].values
+            pred_values = self.predictions_data[k]['day_ahead_prices_predicted'].values
+            plt.plot(timestamps, pred_values, label=str(k).replace('_predicted', ''))
+
+        plt.xticks(rotation=45)
+        plt.title('Model Predictions per Hour')
+        plt.ylabel('Day Ahead Price in €')
+        plt.xlabel('Timestamp')
+        plt.legend(loc='upper right')
+        plt.tight_layout()
+        if self.export_dir is not None:
+            plt.savefig(self.export_dir + '\\' + 'hourly_compare_predictions.png')
+        plt.show(block=True)
+
+    def plot_compare_predictions_daily(self):
+        gt_values = self.ground_truth_data['day_ahead_prices'].values
+        timestamps = self.ground_truth_data['timestamp'].values
+        plt.plot(timestamps, gt_values, label='Actual Values')
+
+        for k in self.predictions_data.keys():
+            days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(
+                names='date')
+            timestamps = days_df['timestamp'].values
+            pred_values = days_df['day_ahead_prices_predicted'].values
+            plt.plot(timestamps, pred_values, label=str(k).replace('_predicted', ''))
+
+        plt.xticks(rotation=45)
+        plt.title('Model Predictions per Day')
+        plt.ylabel('Day Ahead Price in €')
+        plt.xlabel('Timestamp')
+        plt.legend(loc='upper right')
+        plt.tight_layout()
+        if self.export_dir is not None:
+            plt.savefig(self.export_dir + '\\' + 'daily_compare_predictions.png')
         plt.show(block=True)
 
     def plot_compare_mae(self):
@@ -241,4 +290,42 @@ class BenchmarkMaker:
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_mape.png')
         plt.show(block=True)
+
+    def plot_single_model(self, model_name: str = ''):
+        x = self.predictions_data[model_name].timestamp
+        y1 = self.predictions_data[model_name]['day_ahead_prices_predicted']
+        y2 = self.predictions_data[model_name]['AE']
+        y3 = self.predictions_data[model_name]['SE']
+
+        fig, ax1 = plt.subplots()
+
+        # plot prediction and absolute error with € scale
+        ax1.plot(x, y1, 'b', label='y1 (sin(x)')
+        ax1.set_xlabel('X-axis')
+        ax1.set_ylabel('y1', color='b')
+        ax1.tick_params('y', colors='b')
+
+        # plot RMSE with additional scale
+        ax2 = ax1.twinx()
+
+        ax2.plot(x, y2, 'g', label='y2 (exp(-x))')
+        ax2.set_ylabel('y2', color='g')
+        ax2.tick_params('y', colors='g')
+
+        ax3 = ax1.twinx()
+
+        ax3.plot(x, y3, 'r', label='y3 (100*cos(x))')
+        ax3.spines['right'].set_position(('outward', 60))
+        ax3.set_ylabel('y3', color='r')
+        ax3.tick_params('y', colors='r')
+
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        lines3, labels3 = ax3.get_legend_handles_labels()
+        lines = lines1 + lines2 + lines3
+        labels = labels1 + labels2 + labels3
+        plt.legend(lines, labels, loc='upper right')
+
+        plt.title('Multiple Y-axis Scales')
+        plt.show()
 

@@ -9,6 +9,7 @@ if __name__ == '__main__':
                     'tz': 'Europe/Brussels'}
     BenchMaker = BenchmarkMaker(config=bench_config)
 
+    BenchMaker.plot_compare_predictions()
     BenchMaker.plot_compare_rmse()
     BenchMaker.plot_compare_mae()
     BenchMaker.plot_compare_mape()
