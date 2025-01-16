@@ -270,6 +270,15 @@ def main():
     final_df.to_csv(output_pathgz, sep=',', index=False, compression='gzip')
 
 
+def download_and_merge_multiple_csv(module_ids):
+    steps = ["1420066800000","1600000000000",str(int(datetime.datetime.today().timestamp()))+'000']
+    csvfiles = []
+    for timestamp_from, timestamp_to in zip(steps,steps[1:]):
+        response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
+                                 data='{"request_form":[{"format":"CSV","moduleIds":'+module_ids+',"region":"DE","timestamp_from":'+timestamp_from+',"timestamp_to":'+timestamp_to+',"type":"discrete","language":"en","resolution":"hour"}]}')
+        csvfiles.append(response.content.decode('utf-8-sig'))
+    csvfile_data = csvfiles[0] + csvfiles[1][csvfiles[1].index('\n'):]
+    return csvfile_data
 
 
 def download(download_id):
@@ -277,68 +286,51 @@ def download(download_id):
     match download_id:
         # AUTOMATIC FREQUENCY RESTORATION
         case 0:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[18004368,18004369,18004370,18004351,18004371,18004372,18004373,18004374],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[18004368,18004369,18004370,18004351,18004371,18004372,18004373,18004374]')
         # BALANCING ENERGY
         case 1:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[15004383,15004384,15004382,15004390],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')        
-        # COSTS  
+            csvfile_data = download_and_merge_multiple_csv('[15004383,15004384,15004382,15004390]')
+        # COSTS
         case 2:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[16004391,16000419,16000418],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[16004391,16000419,16000418]')
         # EXPORTED BALANCING SERVICES
         case 3:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[20004385],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[20004385]')
         #FREQUENCY CONTAINMENT RESERVE
         case 4:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[17004363, 17004367],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[17004363, 17004367]')
         # IMPORTED BALANCING SERVICES
         case 5:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[21004386],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[21004386]')
         # MANUAL FREQUENCY RESTORATION RESERVE
         case 6:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[19004377,19004375,19004376,19004352,19004378,19004379,19004380,19004381],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
-        
+            csvfile_data = download_and_merge_multiple_csv('[19004377,19004375,19004376,19004352,19004378,19004379,19004380,19004381]')
+
         #electricity consumption, actual
         case 7:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[5000410,5004387,5004359],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[5000410,5004387,5004359]')
         #forecast consumption
         case 8:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[6000411,6004362],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[6000411,6004362]')
         #electricity generation actual
         case 9:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[1001224,1004066,1004067,1004068,1001223,1004069,1004071,1004070,1001226,1001228,1001227,1001225],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[1001224,1004066,1004067,1004068,1001223,1004069,1004071,1004070,1001226,1001228,1001227,1001225]')
         #electricity generation forecast
         case 10:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[2000122,2005097,2000715,2003791,2000123,2000125],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[2000122,2005097,2000715,2003791,2000123,2000125]')
         #MARKET
         # CROSSBORDER FLOWS
         case 11:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[31004963,31004736,31004737,31004740,31004741,31004988,31004990,31004992,31004994,31004738,31004742,31004743,31004744,31004880,31004881,31004882,31004883,31004884,31004885,31004886,31004887,31004888,31004739],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[31004963,31004736,31004737,31004740,31004741,31004988,31004990,31004992,31004994,31004738,31004742,31004743,31004744,31004880,31004881,31004882,31004883,31004884,31004885,31004886,31004887,31004888,31004739]')
         # CROSSBORDER SCHEDULED FLOWS
         case 12:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[22004629,22004722,22004724,22004404,22004409,22004545,22004546,22004548,22004550,22004551,22004552,22004405,22004547,22004403,22004406,22004407,22004408,22004410,22004412,22004549,22004553,22004998,22004712],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[22004629,22004722,22004724,22004404,22004409,22004545,22004546,22004548,22004550,22004551,22004552,22004405,22004547,22004403,22004406,22004407,22004408,22004410,22004412,22004549,22004553,22004998,22004712]')
         # DAYAHEAD
         case 13:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[8004169,8004170,8000251,8005078,8000252,8000253,8000254,8000255,8000256,8000257,8000258,8000259,8000260,8000261,8000262,8004996,8004997],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(datetime.datetime.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
-        
-    csvfile_data = response.content.decode('utf-8-sig')
-    download_df = pd.read_csv(StringIO(csvfile_data), sep=";", header=[0], na_values='-', low_memory=False)
-    
-    return download_df
+            csvfile_data = download_and_merge_multiple_csv('[8004169,8004170,8000251,8005078,8000252,8000253,8000254,8000255,8000256,8000257,8000258,8000259,8000260,8000261,8000262,8004996,8004997]')
 
+    download_df = pd.read_csv(StringIO(csvfile_data), sep=";", header=[0], na_values='-', low_memory=False)
+    return download_df
 
 
 def new_format(df, my_dict):
