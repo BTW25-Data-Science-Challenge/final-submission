@@ -14,8 +14,6 @@ class ChronosModel(BaseModel):
     def _BaseModel__create_model(self):
         self.model = None
 
-    def train(self, X_train = None, y_train = None, X_val = None, y_val = None, X_test = None, y_test = None):
-        return None
     
     def _BaseModel__run_prediction(self, X):
 
@@ -45,7 +43,7 @@ class ChronosModel(BaseModel):
         :param filename: URL to uploadad model on github
         """
          
-        #ToDO Upload Model to GiHub and anapt URL
+        #ToDO Upload Model to GiHub and adapt URL
         model_url = filename
     
         # Download the model file
