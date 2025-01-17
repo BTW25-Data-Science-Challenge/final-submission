@@ -1,16 +1,3 @@
-from base_model import BaseModel
-import torch
-import numpy as np
-import pandas as pd
-
-import os
-
-#Install Chronos in Jupyter notebook before usage
-#!pip install git+https://github.com/amazon-science/chronos-forecasting.git
-#!pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
-
-from chronos import ChronosPipeline
-
 class ChronosModel(BaseModel):
     def __init__(self, model_name: str, model_type: str):
         """Call the BaseModel constructor with the required arguments."""
@@ -53,7 +40,7 @@ class ChronosModel(BaseModel):
             os.system(f"git clone {github_repo_url} {local_dir}")
 
         # Path to the specific directory containing the checkpoint
-        checkpoint_dir = os.path.join(local_dir, "chronos/models/models/Chronos-Tiny-2015-1000/checkpoint-final")
+        checkpoint_dir = os.path.join(local_dir, "models/models/chronos-tiny-2015-1000/checkpoint-final")
         
         # Load the model pipeline
         pipeline = ChronosPipeline.from_pretrained(
@@ -63,7 +50,7 @@ class ChronosModel(BaseModel):
         )
 
         return pipeline
-
+                
     def _BaseModel__custom_save(self, model = None, filename = None):
         return
 
