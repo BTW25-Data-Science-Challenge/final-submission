@@ -1,21 +1,11 @@
-from base_model import BaseModel
-import torch
-import numpy as np
-import pandas as pd
-
-import requests
-import tempfile
-
-#install pip install "chronos-forecasting[training] @ git+https://github.com/amazon-science/chronos-forecasting.git" before using class
-
-from chronos import ChronosPipeline
-
 class ChronosModel(BaseModel):
+    def __init__(self, model_name: str, model_type: str):
+        """Call the BaseModel constructor with the required arguments."""
+        super().__init__(model_name, model_type)
+
     def _BaseModel__create_model(self):
         self.model = None
 
-    def train(self, X_train = None, y_train = None, X_val = None, y_val = None, X_test = None, y_test = None):
-        return None
     
     def _BaseModel__run_prediction(self, X):
 
@@ -41,26 +31,28 @@ class ChronosModel(BaseModel):
 
     
     def _BaseModel__custom_load(self, filename):
-        """
-        :param filename: URL to uploadad model on github
-        """
-         
-        #ToDO Upload Model to GiHub and anapt URL
-        model_url = filename
-    
-        # Download the model file
-        response = requests.get(model_url)
-        if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                tmp_file.write(response.content)
-                model_path = tmp_file.name
-        else:
-            raise ValueError(f"Failed to download model checkpoint. HTTP Status: {response.status_code}")
+        # Directory to clone
+        github_repo_url = filename
+        local_dir = "./final-submission"
 
+        # Clone the repository if it doesn't already exist
+        if not os.path.exists(local_dir):
+            os.system(f"git clone {github_repo_url} {local_dir}")
 
+        # Path to the specific directory containing the checkpoint
+        checkpoint_dir = os.path.join(local_dir, "models/models/chronos-tiny-2015-1000/checkpoint-final")
+        
+        # Load the model pipeline
         pipeline = ChronosPipeline.from_pretrained(
-            model_path,
+            checkpoint_dir,
             device_map=("cuda" if torch.cuda.is_available() else "cpu"),
             torch_dtype=torch.bfloat16,
-)
+        )
+
         return pipeline
+                
+    def _BaseModel__custom_save(self, model = None, filename = None):
+        return
+
+    def train(self, X_train = None, y_train = None, X_val = None, y_val = None, X_test = None, y_test = None):
+        return None

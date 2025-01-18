@@ -13,6 +13,7 @@ import re
 import sys
 import time
 import zipfile
+import holidays
 
 import numpy as np
 import pandas as pd
@@ -24,17 +25,19 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 
+
 ##Stockmarket
-url_brent = 'https://finance.yahoo.com/quote/BZ%3DF/history/?period1=1420070400&period2=1734903292&guccounter=1'
-url_gas = 'https://finance.yahoo.com/quote/NG%3DF/history/?period1=1420070400&period2=1734905333'
-url_coal = 'https://finance.yahoo.com/quote/MTFZ24.NYM/history/?period1=1420070400&period2=1734905597'
+url_oil = 'https://www.finanzen.net/rohstoffe/oelpreis'
+url_gas = 'https://www.finanzen.net/rohstoffe/erdgas-preis-natural-gas'
+url_coal = 'https://www.finanzen.net/rohstoffe/kohlepreis'
+url_uran = 'https://www.finanzen.net/rohstoffe/uranpreis'
 
 
 
 ##Entsoe
 start_time = time.time()
 load_dotenv()
-ENTSOE_API_KEY="562a20c4-03b0-4ee6-a692-19d534b4393a"
+ENTSOE_API_KEY="a5cd0e33-0ad4-4203-b890-b4dfe04a3005"
 client = EntsoePandasClient(api_key=ENTSOE_API_KEY)
 
 start = pd.Timestamp('20150101', tz='UTC')
@@ -95,7 +98,8 @@ state_percentages = {
 }
 
 ## Smard
-# #-------------translation for Balancing:------------------
+
+#-------------translation for Balancing:------------------
 balancing_id={
     #automatic frequency, tag=af
     "automatic_frequency":{
@@ -103,12 +107,12 @@ balancing_id={
         "End date":"End_Date",
         "Volume activated (+) [MWh] Calculated resolutions":"af_E_Volume_Activated_Plus_MWh",
         "Volume activated (-) [MWh] Calculated resolutions":"af_E_Volume_Activated_Minus_MWh",
-        "Activation price (+) [€/MWh] Calculated resolutions":"af_Activation_Price_Plus_EUR/MWh",
-        "Activation price (-) [€/MWh] Calculated resolutions":"af_Activation_Price_Minus_EUR/MWh",
+        "Activation price (+) [€/MWh] Calculated resolutions":"af_Activation_Price_Plus_EUR_MWh",
+        "Activation price (-) [€/MWh] Calculated resolutions":"af_Activation_Price_Minus_EUR_MWh",
         "Volume procured (+) [MW] Calculated resolutions":"af_E_Volume_Procured_Plus_MW",
         "Volume procured (-) [MW] Calculated resolutions":"af_E_Volume_Procured_Minus_MW",
-        "Procurement price (+) [€/MW] Calculated resolutions":"af_Procurement_Price_Plus_EUR/MW",
-        "Procurement price (-) [€/MW] Calculated resolutions":"af_Procurement_Price_Minus_EUR/MW",
+        "Procurement price (+) [€/MW] Calculated resolutions":"af_Procurement_Price_Plus_EUR_MW",
+        "Procurement price (-) [€/MW] Calculated resolutions":"af_Procurement_Price_Minus_EUR_MW",
     },
     #tag=mf
     "manual_frequency":{
@@ -116,12 +120,12 @@ balancing_id={
         "End date":"End_Date",
         "Volume activated (+) [MWh] Calculated resolutions":"mf_E_Volume_Activated_Plus_MWh",
         "Volume activated (-) [MWh] Calculated resolutions":"mf_E_Volume_Activated_Minus_MWh",
-        "Activation price (+) [€/MWh] Calculated resolutions":"mf_Activation_Price_Plus_EUR/MWh",
-        "Activation price (-) [€/MWh] Calculated resolutions":"mf_Activation_Price_Minus_EUR/MWh",
+        "Activation price (+) [€/MWh] Calculated resolutions":"mf_Activation_Price_Plus_EUR_MWh",
+        "Activation price (-) [€/MWh] Calculated resolutions":"mf_Activation_Price_Minus_EUR_MWh",
         "Volume procured (+) [MW] Calculated resolutions":"mf_E_Volume_Procured_Plus_MW",
         "Volume procured (-) [MW] Calculated resolutions":"mf_E_Volume_Procured_Minus_MW",
-        "Procurement price (+) [€/MW] Calculated resolutions":"mf_Procurement_Price_Plus_EUR/MW",
-        "Procurement price (-) [€/MW] Calculated resolutions":"mf_Procurement_Price_Minus_EUR/MW",
+        "Procurement price (+) [€/MW] Calculated resolutions":"mf_Procurement_Price_Plus_EUR_MW",
+        "Procurement price (-) [€/MW] Calculated resolutions":"mf_Procurement_Price_Minus_EUR_MW",
     },
      #balancing energy
     "balancing_energy":{
@@ -129,7 +133,7 @@ balancing_id={
         "End date":"End_Date",
         "Volume (+) [MWh] Calculated resolutions":"E_Volume_Calculated_Plus_MWh",
         "Volume (-) [MWh] Calculated resolutions":"E_Volume_Calculated_Minus_MWh",
-        "Price [€/MWh] Calculated resolutions":"Price_Calculated_EUR/MWh",
+        "Price [€/MWh] Calculated resolutions":"Price_Calculated_EUR_MWh",
         "Net income [€] Calculated resolutions":"Net_Income_EUR",
     },
     #costs
@@ -242,23 +246,23 @@ market_id={
     "day_ahead_prices":{
         "Start date":"Start_Date",
         "End date":"End_Date",
-        "Germany/Luxembourg [€/MWh] Original resolutions":"dayAhead_Price_GermanyAndLuxembourg_EUR/MWh",
-        "∅ DE/LU neighbours [€/MWh] Original resolutions":"dayAhead_Price_GermanyAndLuxembourgAverage_EUR/MWh",
-        "Belgium [€/MWh] Original resolutions":"dayAhead_Price_Belgium_EUR/MWh",
-        "Denmark 1 [€/MWh] Original resolutions":"dayAhead_Price_Denmark1_EUR/MWh",
-        "Denmark 2 [€/MWh] Original resolutions":"dayAhead_Price_Denmark2_EUR/MWh",
-        "France [€/MWh] Original resolutions":"dayAhead_Price_France_EUR/MWh",
-        "Netherlands [€/MWh] Original resolutions":"dayAhead_Price_Netherlands_EUR/MWh",
-        "Norway 2 [€/MWh] Original resolutions":"dayAhead_Price_Norway2_EUR/MWh",
-        "Austria [€/MWh] Original resolutions":"dayAhead_Price_Austria_EUR/MWh",
-        "Poland [€/MWh] Original resolutions":"dayAhead_Price_Poland_EUR/MWh",
-        "Sweden 4 [€/MWh] Original resolutions":"dayAhead_Price_Sweden4_EUR/MWh",
-        "Switzerland [€/MWh] Original resolutions":"dayAhead_Price_Switzerland_EUR/MWh",
-        "Czech Republic [€/MWh] Original resolutions":"dayAhead_Price_CzechRepublic_EUR/MWh",
-        "DE/AT/LU [€/MWh] Original resolutions":"dayAhead_Price_DE/AT/LU_EUR/MWh",
-        "Northern Italy [€/MWh] Original resolutions":"dayAhead_Price_NothernItaly_EUR/MWh",
-        "Slovenia [€/MWh] Original resolutions":"dayAhead_Price_Slovenia_EUR/MWh",
-        "Hungary [€/MWh] Original resolutions":"dayAhead_Price_Hungary_EUR/MWh"
+        "Germany/Luxembourg [€/MWh] Original resolutions":"dayAhead_Price_GermanyAndLuxembourg_EUR_MWh",
+        "∅ DE/LU neighbours [€/MWh] Original resolutions":"dayAhead_Price_GermanyAndLuxembourgAverage_EUR_MWh",
+        "Belgium [€/MWh] Original resolutions":"dayAhead_Price_Belgium_EUR_MWh",
+        "Denmark 1 [€/MWh] Original resolutions":"dayAhead_Price_Denmark1_EUR_MWh",
+        "Denmark 2 [€/MWh] Original resolutions":"dayAhead_Price_Denmark2_EUR_MWh",
+        "France [€/MWh] Original resolutions":"dayAhead_Price_France_EUR_MWh",
+        "Netherlands [€/MWh] Original resolutions":"dayAhead_Price_Netherlands_EUR_MWh",
+        "Norway 2 [€/MWh] Original resolutions":"dayAhead_Price_Norway2_EUR_MWh",
+        "Austria [€/MWh] Original resolutions":"dayAhead_Price_Austria_EUR_MWh",
+        "Poland [€/MWh] Original resolutions":"dayAhead_Price_Poland_EUR_MWh",
+        "Sweden 4 [€/MWh] Original resolutions":"dayAhead_Price_Sweden4_EUR_MWh",
+        "Switzerland [€/MWh] Original resolutions":"dayAhead_Price_Switzerland_EUR_MWh",
+        "Czech Republic [€/MWh] Original resolutions":"dayAhead_Price_CzechRepublic_EUR_MWh",
+        "DE/AT/LU [€/MWh] Original resolutions":"dayAhead_Price_DE/AT/LU_EUR_MWh",
+        "Northern Italy [€/MWh] Original resolutions":"dayAhead_Price_NothernItaly_EUR_MWh",
+        "Slovenia [€/MWh] Original resolutions":"dayAhead_Price_Slovenia_EUR_MWh",
+        "Hungary [€/MWh] Original resolutions":"dayAhead_Price_Hungary_EUR_MWh"
     },
     
     "cross_border_physical":{
@@ -333,7 +337,7 @@ forecas_folder="../final-submission/merged_data/forecast"
 #Basis-URL for dwd-data
 base_url_review = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/"
 url_forecast = "https://dwd.api.proxy.bund.dev/v30/stationOverviewExtended"
-#collums to remove
+#collums to remove   
 columns_remove_clouds = ["STATIONS_ID","eor", "QN_8","V_N_I"]
 columns_remove_pressure = ["STATIONS_ID","eor", "QN_8"]
 columns_remove_sun = ["STATIONS_ID","eor", "QN_7"]
@@ -366,50 +370,75 @@ headers_weather = {
 
 
 ##Stockmarket
+##Stockmarket
 
 def directory_exists(filepath):
     directory = os.path.dirname(filepath)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-# gets data from yahoo finance with the given url, the filename and resource have to be put in
-def get_Data(url, filename, resource):
-    directory_exists(filename)
+# gets data from finanzen.net with the given url, the filename and resource have to be put in, it updates an already existing file, to not use selenium
+def get_Data(url, filename, resource, before):
+
+    #ellaborate header needed, otherwise finanzen.net will give an access denied error
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.finanzen.net',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     }
-    response = requests.get(url, headers=headers)
+
+    session = requests.Session()
+    response = session.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
-    table = soup.find('table')
 
-    # Extract headers
-    headers = [header.text.strip() for header in table.find_all('th')]
+    #used website inspection to find the right table from the website
+    table = soup.find('table', class_='table table--content-right')
 
-    # Close column = Value for end of the day, the rest of the columns are not needed
-    close_column_index = next(i for i, header in enumerate(headers) if header.lower().startswith('close'))
+    if table:
+        headers = [th.get_text(strip=True) for th in table.find_all('th')]
 
-    # Extract data from the table
-    data = []
-    for row in table.find_all('tr'):
-        columns = row.find_all('td')
-        if columns:
-            # Get correcct Date format
-            date = columns[0].text.strip()
-            date = dt.strptime(date, '%b %d, %Y').strftime('%Y-%m-%d')
-            close_value = columns[close_column_index].text.strip()
-            data.append([date, close_value])
+        #we only need schluss and date, the other columns are irrelevant
+        datum_index = headers.index('Datum')
+        schlusskurs_index = headers.index('Schlusskurs')
+        rows = table.find_all('tr')[1:] 
+        extracted_data = []
 
+        for row in rows:
+            columns = row.find_all('td')
+            if len(columns) > max(datum_index, schlusskurs_index): 
+                datum = columns[datum_index].get_text(strip=True)
+                schlusskurs = columns[schlusskurs_index].get_text(strip=True)
+                schlusskurs = schlusskurs.replace(',', '.')
+                extracted_data.append({'Date': datum, resource: schlusskurs})
 
-    # data is in the wrong order, put it from earliest to latest
-    data.sort(key=lambda x: dt.strptime(x[0], '%Y-%m-%d'))
+        df = pd.DataFrame(extracted_data)
 
-    # Save the data with headers as a CSV file
-    with open(filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Date', resource])
-        writer.writerows(data)
+    else:
+        print("Table not found")
 
-    print("Data saved as ",filename)
+    df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y')
+
+    old = pd.read_csv(before)
+    old['Date'] = pd.to_datetime(old['Date'], format='%Y-%m-%d')  
+
+    df_filtered = df[~df['Date'].isin(old['Date'])]
+
+    if not df_filtered.empty:
+        old = pd.concat([old, df_filtered], ignore_index=True)
+
+    old['Date'] = pd.to_datetime(old['Date'], format='%Y-%m-%d')
+
+    # data is in the wrong order, reverses it
+    old = old.sort_values(by='Date')
+
+    # Save the updated and sorted data to a new CSV file
+    old.to_csv(filename, index=False)
+    old.to_csv(before, index=False)
+
+    print("Data saved as", filename)
 
 #the data is missing hour, as it is only daily, fills weekend gaps also
 def fill_missing_hours(csv):
@@ -423,7 +452,7 @@ def fill_missing_hours(csv):
     df.set_index('Date', inplace=True)
 
     # start 2015
-    full_hourly_range = pd.date_range(start='01.01.2015', end=df.index.max() + pd.Timedelta(days=1), freq='H')[:-1]
+    full_hourly_range = pd.date_range(start='01.01.2015', end=df.index.max() + pd.Timedelta(days=1), freq='h')[:-1]
 
     # put prefered null value here
     df_full = df.reindex(full_hourly_range, fill_value=pd.NA)
@@ -432,12 +461,11 @@ def fill_missing_hours(csv):
     df_full[value_Name] = df_full.groupby(df_full['Date'].dt.floor('D'))[value_Name].transform(lambda group: group.ffill().bfill())
 
     # fills emptys
-    df_full[value_Name].fillna('', inplace=True)
+    df_full.fillna({value_Name:np.nan}, inplace=True)
     df_full.to_csv(csv, index=False)
     print('Missing Hours Filled: ', csv)
 
 ##Entsoe
-
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10), retry=retry_if_exception_type(Exception))
 def query_entsoe_data(query_func, country_code, start, end):
@@ -472,85 +500,8 @@ def merge_data(query_func):
 
 def save_df_with_timestamp(df, filename):
     df_copy = df.copy()
-    df_copy.index.name = 'Date'
+    df_copy.index.name = 'timestamp'
     df_copy.to_csv(filename)
-
-#Fetch and Save Data for All Tasks
-def start_fetch_save_data(tasks):
-    max_workers = min(os.cpu_count(), len(tasks))
-    print(f"Starting data fetch for {len(tasks)} tasks with {max_workers} threads.")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_task = {
-            executor.submit(fetch_save_data, task['query_func'], task['save_path'],task.get('rename_columns'), task.get('transform_func')): task for task in tasks
-        }
-        for future in concurrent.futures.as_completed(future_to_task):
-            task = future_to_task[future]
-            try:
-                future.result()
-                print(f"Task completed for {task['save_path'].split('/')[-1]}.")
-            except Exception as e:
-                print(f"Error in task for {task['save_path'].split('/')[-1]}: {e}")
-
-#Helper function for fetching and saving
-def fetch_save_data(query_func, save_path, rename_columns=None, transform_func=None):
-    data = merge_data(query_func)
-
-    # Filter: Nur Daten mit vollen Stunden (Minute == 0)
-    data['Date'] = data.index
-    data = data[data['Date'].dt.minute == 0]
-
-    if rename_columns:
-        data = data.rename(columns=rename_columns)
-    if transform_func:
-        data = transform_func(data)
-
-    data['Date'] = data['Date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-
-    save_df_with_timestamp(data, save_path)
-    print(f'{save_path.split("/")[-1]} done')
-
-#Transform solar and wind
-def rename_wind_solar_columns(df):
-    for col in df.columns:
-        if 'Wind' in col:
-            df = df.rename(columns={col: 'E_wind_forecast_MWh'})
-        elif 'Solar' in col:
-            df = df.rename(columns={col: 'E_solar_forecast_MWh'})
-    return df
-
-#Tasks for parallel processing
-tasks = [
-    {
-        'query_func': client.query_day_ahead_prices,
-        'save_path': f'{out_dir}/day_ahead_prices.csv',
-        'rename_columns': {None: 'day_ahead_prices_EURO'}
-    },
-    {
-        'query_func': client.query_load_forecast,
-        'save_path': f'{out_dir}/load_forecast.csv',
-        'rename_columns': {None: 'E_load_forecast_MWh'}
-    },
-    {
-        'query_func': client.query_generation_forecast,
-        'save_path': f'{out_dir}/generation_forecast.csv',
-        'rename_columns': {None: 'E_generation_forecast_MWh'}
-    },
-    {
-        'query_func': client.query_intraday_wind_and_solar_forecast,
-        'save_path': f'{out_dir}/intraday_wind_solar_forecast.csv',
-        'transform_func': rename_wind_solar_columns
-    },
-    {
-        'query_func': client.query_wind_and_solar_forecast,
-        'save_path': f'{out_dir}/day_ahead_wind_solar_forecast.csv',
-        'transform_func': rename_wind_solar_columns
-    },
-    {
-        'query_func': partial(client.query_physical_crossborder_allborders, export=True),
-        'save_path': f'{out_dir}/physical_crossborder_flows.csv',
-        'transform_func': lambda df: df.rename(columns={col: f'E_crossborder_{col}_actual_MWh' for col in df.columns})
-    }
-]
 
 
 ##Covid Lockdown Data
@@ -590,18 +541,21 @@ def main():
     
     final_df = None
 
-    for i in range(13):
+    for i in range(3):
         working_df = download(i)
         working_df = new_format(working_df, dict_ids[i])
 
-        if i > 0:
-            working_df=working_df.drop(working_df.columns[1],axis=1)
+        #if i > 0:
+        working_df=working_df.drop(working_df.columns[1],axis=1)
         #only called once
         if final_df is None:
             final_df = working_df
         else:
-            final_df = pd.merge(final_df, working_df, on=working_df.columns[0], how='inner', copy=True)
+            final_df = pd.merge(final_df, working_df, on=working_df.columns[0], how='outer')
+            #final_df = pd.merge(final_df, working_df, on=working_df.columns[0], how='inner', copy=True)
     
+    final_df=final_df[final_df.duplicated(keep=False) == False]
+
     final_df.to_csv(output_path, sep=',', index=False)
 
     #use gzip to compress .csv outputfile to <file_out>.gz
@@ -610,6 +564,15 @@ def main():
     final_df.to_csv(output_pathgz, sep=',', index=False, compression='gzip')
 
 
+def download_and_merge_multiple_csv(module_ids):
+    steps = ["1420066800000","1600000000000",str(int(datetime.datetime.today().timestamp()))+'000']
+    csvfiles = []
+    for timestamp_from, timestamp_to in zip(steps,steps[1:]):
+        response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
+                                 data='{"request_form":[{"format":"CSV","moduleIds":'+module_ids+',"region":"DE","timestamp_from":'+timestamp_from+',"timestamp_to":'+timestamp_to+',"type":"discrete","language":"en","resolution":"hour"}]}')
+        csvfiles.append(response.content.decode('utf-8-sig'))
+    csvfile_data = csvfiles[0] + csvfiles[1][csvfiles[1].index('\n'):]
+    return csvfile_data
 
 
 def download(download_id):
@@ -617,68 +580,51 @@ def download(download_id):
     match download_id:
         # AUTOMATIC FREQUENCY RESTORATION
         case 0:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[18004368,18004369,18004370,18004351,18004371,18004372,18004373,18004374],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[18004368,18004369,18004370,18004351,18004371,18004372,18004373,18004374]')
         # BALANCING ENERGY
         case 1:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[15004383,15004384,15004382,15004390],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')        
-        # COSTS  
+            csvfile_data = download_and_merge_multiple_csv('[15004383,15004384,15004382,15004390]')
+        # COSTS
         case 2:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[16004391,16000419,16000418],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[16004391,16000419,16000418]')
         # EXPORTED BALANCING SERVICES
         case 3:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[20004385],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[20004385]')
         #FREQUENCY CONTAINMENT RESERVE
         case 4:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[17004363, 17004367],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[17004363, 17004367]')
         # IMPORTED BALANCING SERVICES
         case 5:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[21004386],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[21004386]')
         # MANUAL FREQUENCY RESTORATION RESERVE
         case 6:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[19004377,19004375,19004376,19004352,19004378,19004379,19004380,19004381],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
-        
+            csvfile_data = download_and_merge_multiple_csv('[19004377,19004375,19004376,19004352,19004378,19004379,19004380,19004381]')
+
         #electricity consumption, actual
         case 7:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[5000410,5004387,5004359],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[5000410,5004387,5004359]')
         #forecast consumption
         case 8:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[6000411,6004362],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[6000411,6004362]')
         #electricity generation actual
         case 9:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[1001224,1004066,1004067,1004068,1001223,1004069,1004071,1004070,1001226,1001228,1001227,1001225],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[1001224,1004066,1004067,1004068,1001223,1004069,1004071,1004070,1001226,1001228,1001227,1001225]')
         #electricity generation forecast
         case 10:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[2000122,2005097,2000715,2003791,2000123,2000125],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[2000122,2005097,2000715,2003791,2000123,2000125]')
         #MARKET
         # CROSSBORDER FLOWS
         case 11:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[31004963,31004736,31004737,31004740,31004741,31004988,31004990,31004992,31004994,31004738,31004742,31004743,31004744,31004880,31004881,31004882,31004883,31004884,31004885,31004886,31004887,31004888,31004739],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[31004963,31004736,31004737,31004740,31004741,31004988,31004990,31004992,31004994,31004738,31004742,31004743,31004744,31004880,31004881,31004882,31004883,31004884,31004885,31004886,31004887,31004888,31004739]')
         # CROSSBORDER SCHEDULED FLOWS
         case 12:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[22004629,22004722,22004724,22004404,22004409,22004545,22004546,22004548,22004550,22004551,22004552,22004405,22004547,22004403,22004406,22004407,22004408,22004410,22004412,22004549,22004553,22004998,22004712],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
+            csvfile_data = download_and_merge_multiple_csv('[22004629,22004722,22004724,22004404,22004409,22004545,22004546,22004548,22004550,22004551,22004552,22004405,22004547,22004403,22004406,22004407,22004408,22004410,22004412,22004549,22004553,22004998,22004712]')
         # DAYAHEAD
         case 13:
-            response = requests.post('https://www.smard.de/nip-download-manager/nip/download/market-data',
-                                data='{"request_form":[{"format":"CSV","moduleIds":[8004169,8004170,8000251,8005078,8000252,8000253,8000254,8000255,8000256,8000257,8000258,8000259,8000260,8000261,8000262,8004996,8004997],"region":"DE","timestamp_from":1420066800000,"timestamp_to":'+str(int(dt.today().timestamp()))+'000,"type":"discrete","language":"en","resolution":"hour"}]}')
-        
-    csvfile_data = response.content.decode('utf-8-sig')
-    download_df = pd.read_csv(StringIO(csvfile_data), sep=";", header=[0], na_values='-', low_memory=False)
-    
-    return download_df
+            csvfile_data = download_and_merge_multiple_csv('[8004169,8004170,8000251,8005078,8000252,8000253,8000254,8000255,8000256,8000257,8000258,8000259,8000260,8000261,8000262,8004996,8004997]')
 
+    download_df = pd.read_csv(StringIO(csvfile_data), sep=";", header=[0], na_values='-', low_memory=False)
+    return download_df
 
 
 def new_format(df, my_dict):
@@ -697,15 +643,17 @@ def new_format(df, my_dict):
     return df
     
 
-def merge(fin_df, work_df, i):
+def my_merge(fin_df, work_df, i):
 
-    if i > 0:
-        work_df=work_df.drop(work_df.columns[1],axis=1)
-    
-    fin_df = pd.merge(fin_df, work_df, on=work_df.columns[0], how='inner', copy=True)
+    #if i > 0:
+        #work_df=work_df.drop(work_df.columns[1],axis=1)
+    work_df=work_df.drop(work_df.columns['End_Date'],axis=1)
+    #fin_df = pd.merge(fin_df, work_df, on=work_df.columns[0], how='inner', copy=True)
+    fin_df = pd.merge(fin_df, work_df, on=work_df.columns[0], how='outer')
 
 
 ##weather
+
 #Definitions of funktions for weather
 def combine_historic(station_r, place): 
   #combine data
@@ -838,7 +786,7 @@ def station_folderget_weather_data_for_station_review(station_id):
                 filename = re.search(r'href="(.*?)"', line).group(1)
                 file_url = url + filename
                 
-                print(f"Lade herunter: {file_url}")
+                print(f"Download of: {file_url}")
                 file_response = requests.get(file_url)
                 file_response.raise_for_status()
 
@@ -857,7 +805,7 @@ def station_folderget_weather_data_for_station_review(station_id):
                         txt_files = [name for name in z.namelist() if re.match(r'produkt_tu_stunde_\d{8}_\d{8}_' + station_id + r'\.txt', name)]
                     
                     if not txt_files:
-                        print(f"Keine TXT-Datei im erwarteten Format für Station {station_id} gefunden.")
+                        print(f"No TXT file in the expected format for station {station_id} found.")
                         continue  
 
                     txt_filename = txt_files[0]
@@ -865,9 +813,9 @@ def station_folderget_weather_data_for_station_review(station_id):
                         try:
                             df = pd.read_csv(f, sep=";", encoding="utf-8")
                             if df.empty:
-                                print(f"Warnung: Die Datei {txt_filename} ist leer.")
+                                print(f"Warning: The file {txt_filename} is empty.")
                             else:
-                                print("Daten geladen für:", txt_filename)
+                                print("Data loaded for:", txt_filename)
                                 if data_type == "temperature_historical":
                                     new_filename = f"temp_{station_id}_hist.txt"
                                 elif data_type == "temperature_recent":
@@ -933,7 +881,7 @@ def cut_historic_bevor_2015(station_id):
 
         with open(file_path, 'w') as outfile:
             outfile.writelines(filtered_lines)
-        print(f"Historisch bis 2015 gekürzt: {file}")
+        print(f"Historically shortened until 2015: {file}")
     remove_columns_review(station_id)
 
 def start_cut_historic_bevor_2015(station_ids):
@@ -1034,12 +982,11 @@ def start_remove_columns_review(station_ids):
     max_workers = min(os.cpu_count(), len(station_ids))   
     print(f"Start remove collumns {len(station_ids)} stations with {max_workers} threads.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        #Jede Station wird parallel heruntergeladen
         future_to_station = {executor.submit(remove_columns_review, station_id): station_id for station_id in station_ids}        
         for future in concurrent.futures.as_completed(future_to_station):
             station_id = future_to_station[future]
             try:
-                future.result()  #Funktion ausführen und Fehler abfangen
+                future.result()  
                 print(f"Collumns deleted for {station_id}.")
             except Exception as e:
                 print(f"Error while deletion of collumns {station_id}: {e}")
@@ -1056,7 +1003,7 @@ def combine_historic_recent(station_id):
                 file_pairs[key] = {}
             file_pairs[key][period] = os.path.join(computing_folder_station, file)
 
-    #Fcombine historic an current data
+    #combine historic an current data
     for key, file_pair in file_pairs.items():
         if 'hist' in file_pair and 'recent' in file_pair:
             hist_df = pd.read_csv(file_pair['hist'], delimiter=";")
@@ -1146,13 +1093,13 @@ def start_combine_all_station_data_review(station_ids):
                 print(f"Files combined for {station_id}.")
             except Exception as e:
                 print(f"Error while combination of station {station_id}: {e}")
-#Wetter Forecastfunktionen:
+#Weather forecastfunktions:
 def get_weather_data_for_station_forecast(station_id, station_place):
     params = {
         "stationIds": station_id
     }
     #prepare request
-    request = requests.Request("GET", url_forecast, headers_weather=headers_weather, params=params)
+    request = requests.Request("GET", url_forecast, headers=headers_weather, params=params)
     prepared_request = request.prepare()
     
     response = requests.Session().send(prepared_request)
@@ -1228,22 +1175,25 @@ def remove_columns_forecast():
 
 
 start_time = time.time()
-
 ##Stockmarket
-get_Data(url_brent, '../final-submission/merged_data/data_collection/brent_oil.csv', 'Brent Oil')
-get_Data(url_gas, '../final-submission/merged_data/data_collection/naturalGas.csv', 'Natural Gas')
-get_Data(url_coal, '../final-submission/merged_data/data_collection/coal.csv', 'Coal')
+get_Data(url_oil, '../final-submission/merged_data/data_collection/oilWti.csv', 'Oil WTI', "../final-submission/merged_data/data_collection/oilWtiOld.csv")
+get_Data(url_gas, '../final-submission/merged_data/data_collection/naturalGas.csv', 'Natural Gas', "../final-submission/merged_data/data_collection/naturalGasOld.csv")
+get_Data(url_coal, '../final-submission/merged_data/data_collection/coal.csv', 'Coal', "../final-submission/merged_data/data_collection/CoalOld.csv")
+get_Data(url_uran, '../final-submission/merged_data/data_collection/uran.csv', 'Uran', '../final-submission/merged_data/data_collection/uranOld.csv')
 
-fill_missing_hours('../final-submission/merged_data/data_collection/brent_oil.csv')
+fill_missing_hours('../final-submission/merged_data/data_collection/oilWti.csv')
 fill_missing_hours('../final-submission/merged_data/data_collection/naturalGas.csv')
 fill_missing_hours('../final-submission/merged_data/data_collection/coal.csv')
+fill_missing_hours('../final-submission/merged_data/data_collection/uran.csv')
 
-df1 = pd.read_csv('../final-submission/merged_data/data_collection/brent_oil.csv')
+df1 = pd.read_csv('../final-submission/merged_data/data_collection/oilWti.csv')
 df2 = pd.read_csv('../final-submission/merged_data/data_collection/naturalGas.csv')
 df3 = pd.read_csv('../final-submission/merged_data/data_collection/coal.csv')
+df35 = pd.read_csv('../final-submission/merged_data/data_collection/uran.csv')
 
 merged_df = pd.merge(df1, df2, on='Date', how='outer')
 merged_df = pd.merge(merged_df, df3, on='Date', how='outer')
+merged_df = pd.merge(merged_df, df35, on='Date', how='outer')
 
 merged_df.to_csv('../final-submission/merged_data/data_collection/merged_data.csv', index=False)
 
@@ -1251,38 +1201,55 @@ print("CSV files have been merged and saved.")
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time Stockmarket: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit nach Stockmarket: {verstrichene_zeit} Sekunden')
 
 ##entsoe
+
 start_time_entsoe = time.time()
-start_fetch_save_data(tasks)
+df4 = pd.read_csv('../final-submission/merged_data/data_collection/day_ahead_prices.csv')
+df4.drop(df4.columns[2], axis=1, inplace=True)
+df5 = pd.read_csv('../final-submission/merged_data/data_collection/load_forecast.csv')
+df5.drop(df5.columns[2], axis=1, inplace=True)
+df6 = pd.read_csv('../final-submission/merged_data/data_collection/generation_forecast.csv')
+df6.drop(df6.columns[2], axis=1, inplace=True)
+df7 = pd.read_csv('../final-submission/merged_data/data_collection/intraday_wind_solar_forecast.csv')
+df7.drop(df7.columns[4], axis=1, inplace=True)
+df8 = pd.read_csv('../final-submission/merged_data/data_collection/day_ahead_wind_solar_forecast.csv')
+df8.drop(df8.columns[4], axis=1, inplace=True)
+df9 = pd.read_csv('../final-submission/merged_data/data_collection/physical_crossborder_flows.csv')
+
+
+merged_df2 = pd.merge(df5, df4, on='Date', how='outer')
+merged_df2 = pd.merge(merged_df2, df6, on='Date', how='outer')
+merged_df2 = pd.merge(merged_df2, df7, on='Date', how='outer')
+merged_df2 = pd.merge(merged_df2, df8, on='Date', how='outer')
+merged_df2 = pd.merge(merged_df2, df9, on='Date', how='outer')
+
+merged_df2.to_csv('../final-submission/merged_data/data_collection/merged_data2.csv', index=False)
+
+df = pd.read_csv('../final-submission/merged_data/data_collection/merged_data2.csv')
+
+df['Date'] = pd.to_datetime(df['Date'])
+df_filtered = df[df['Date'].dt.minute == 0]
+df_filtered['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d %H:%M:%S')
+df_filtered.to_csv('../final-submission/merged_data/data_collection/merged_data3.csv', index=False)
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'execution time fetch_save: {verstrichene_zeit_entsoe} seconds')
-
-#Combining all datasets
-df_list = [pd.read_csv(task['save_path']) for task in tasks]
-merged_df = df_list[0]
-for df in df_list[1:]:
-    merged_df = pd.merge(merged_df, df, on='Date', how='outer')
-
-end_time_entsoe = time.time()
-verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'execution time Merge vor save als csv: {verstrichene_zeit_entsoe} seconds')
+print(f'Ausführungszeit nach Merge vor save als csv: {verstrichene_zeit_entsoe} Sekunden')
 
 merged_df.to_csv(f'{out_dir}/merged_data_multi_2.csv', index=False)
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'execution time Merge_to_csv: {verstrichene_zeit_entsoe} seconds')
+print(f'Ausführungszeit nach Merge_to_csv: {verstrichene_zeit_entsoe} Sekunden')
 
 end_time_entsoe = time.time()
 verstrichene_zeit_entsoe = end_time_entsoe - start_time_entsoe
-print(f'execution time: {verstrichene_zeit_entsoe} seconds')
+print(f'Ausführungszeit komplett: {verstrichene_zeit_entsoe} Sekunden')
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time Entsoe: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit nach Entsoe: {verstrichene_zeit} Sekunden')
 
 ##Covid Lockdown Data
 # generate and populate dataframe with all dates from 2015-1-1 - today
@@ -1310,7 +1277,7 @@ covid_factors_df.to_csv('../final-submission/merged_data/data_collection/covid.c
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time Covidzahlen: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit nach Covidzahlen: {verstrichene_zeit} Sekunden')
 
 ##Smard
 output_path = '../final-submission/merged_data/data_collection/smard.csv'
@@ -1354,65 +1321,58 @@ final_df.to_csv(output_pathgz, sep=',', index=False, compression='gzip')
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time Smard: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit nach Smard: {verstrichene_zeit} Sekunden')
 
 ##weather
-
 start_time_w = time.time()
 create_folder()
 download_weather_data_for_all_stations_review(station_ids_r)
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'execution time weather: {verstrichene_zeit} seconds')
-
+print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
 download_weatherforecast_data_for_all_stations_forecast(station_ids_f, station_place)
 remove_columns_forecast()
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'execution time weather: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
 
 start_combine_historic()
 enend_time_wd = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'execution time weather: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
 combine_all_stations()
 combine_forecast()
 
 end_time_w = time.time()
 verstrichene_zeit = end_time_w - start_time_w
-print(f'execution time weather: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit Wetter: {verstrichene_zeit} Sekunden')
 
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time dem Wetter: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit nach dem Wetter: {verstrichene_zeit} Sekunden')
 
 
 
+
+##Zusammenfassung
 df_res = pd.read_csv('../final-submission/merged_data/data_collection/merged_data.csv')
 df_ens = pd.read_csv('../final-submission/merged_data/data_collection/merged_data3.csv')
 df_smard = pd.read_csv('../final-submission/merged_data/data_collection/smard.csv')
 df_smard = df_smard.rename(columns={'Start_Date': 'Date'})
-df.to_csv('../final-submission/merged_data/data_collection/smard.csv', index=False)
+df_smard.to_csv('../final-submission/merged_data/data_collection/smard.csv', index=False)
 df_smard = pd.read_csv('../final-submission/merged_data/data_collection/smard.csv')
-df_smard['Date'] = pd.to_datetime(df['Date'])
-df_filtered = df[df['Date'].dt.minute == 0]
-df_filtered['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-df_filtered.to_csv('../final-submission/merged_data/data_collection/smard.csv', index=False)
+print(df_smard.head())
+df_smard['Date'] = pd.to_datetime(df_smard['Date'])
+df_filteredSmard = df_smard[df_smard['Date'].dt.minute == 0]
+df_filteredSmard['Date'] = pd.to_datetime(df_filteredSmard['Date']).dt.strftime('%Y-%m-%d %H:%M:%S')
+df_filteredSmard.to_csv('../final-submission/merged_data/data_collection/smard.csv', index=False)
 df_smard = pd.read_csv('../final-submission/merged_data/data_collection/smard.csv')
 
 df_weather = pd.read_csv('../final-submission/merged_data/data_collection/weather.csv')
 df_weather = df_weather.rename(columns={'date': 'Date'})
-df.to_csv('../final-submission/merged_data/data_collection/weather.csv', index=False)
-df_weather = pd.read_csv('../final-submission/merged_data/data_collection/weather.csv')
-df_weather['Date'] = pd.to_datetime(df['Date'])
-df_filtered = df[df['Date'].dt.minute == 0]
-df_filtered['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-df_filtered.to_csv('../final-submission/merged_data/data_collection/weather.csv', index=False)
-df_weather = pd.read_csv('../final-submission/merged_data/data_collection/weather.csv')
 df_covid = pd.read_csv('../final-submission/merged_data/data_collection/covid.csv')
-
 df_social = pd.read_csv('../final-submission/merged_data/data_collection/major_social_events.csv')
 df_carbon = pd.read_csv('../final-submission/merged_data/data_collection/carbon_price_forward_filled.csv')
 
@@ -1422,10 +1382,23 @@ merge_big = pd.merge(merge_big, df_social, on='Date', how='outer')
 merge_big = pd.merge(merge_big, df_carbon, on='Date', how='outer')
 merge_big = pd.merge(merge_big, df_weather, on='Date', how='outer')
 merge_big = pd.merge(merge_big, df_covid, on='Date', how='outer')
-merge_big.to_csv('../allData.csv', index=False)
+
+#add weekdays and Holidays
+merge_big['Date'] = pd.to_datetime(merge_big['Date'])
+merge_big['month'] = merge_big['Date'].dt.month
+merge_big['weekday'] = merge_big['Date'].dt.weekday  # 0=Montag, 6=Sonntag
+merge_big['week_of_year'] = merge_big['Date'].dt.isocalendar().week
+merge_big['is_weekend'] = merge_big['weekday'].isin([5, 6])
+german_holidays = holidays.Germany(years=range(merge_big['Date'].dt.year.min(),
+                                               merge_big['Date'].dt.year.max() + 1))
+merge_big['date'] = merge_big['Date'].dt.date
+merge_big['is_holiday'] = merge_big['date'].isin(german_holidays)
+merge_big = merge_big.loc[:, ~merge_big.columns.str.endswith('_y')]
+merge_big.columns =merge_big.columns.str.replace('_x$', '', regex=True)
+
+merge_big.to_csv('../final-submission/merged_data/allData.csv', index=False)
 
 print("CSV files have been merged and saved.")
-
 end_time = time.time()
 verstrichene_zeit = end_time - start_time
-print(f'execution time: {verstrichene_zeit} seconds')
+print(f'Ausführungszeit komplett: {verstrichene_zeit} Sekunden')
