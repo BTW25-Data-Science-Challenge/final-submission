@@ -12,47 +12,31 @@ import time
 
 def fill_missing_with_xgboost(df, target_column):
     """
-    Fills NaN values in the target_column of the DataFrame using an XGBoost regressor trained
+    Fills nan values in the target_column of the DataFrame using an XGBoost regressor trained
     with the other columns as features.
 
-    Parameters:
-    - df (pd.DataFrame): The input DataFrame.
-    - target_column (str): The column name that contains NaN values to be predicted.
-
-    Returns:
-    - pd.DataFrame: A DataFrame with NaN values in the target_column filled.
+    :param df: input dataframe
+    :param target_column: column which contains nan-values, that needs to be replaces
+    :return: dataframe without nan-values in target column
     """
-    # Check if the target column exists
-    if target_column not in df.columns:
-        raise ValueError(f"Column '{target_column}' not found in the DataFrame.")
-
-    # Separate the target column
+    # separate the target column
     target = df[target_column]
 
-    # Identify rows with and without NaN in the target column
+    # identify rows with and without NaN in the target column
     missing_mask = target.isna()
     complete_mask = ~missing_mask
 
-    # Ensure there are missing values to predict
-    if missing_mask.sum() == 0:
-        raise ValueError(f"No missing values found in column '{target_column}'.")
-
-    # Split the data into training (non-NaN) and prediction (NaN)
+    # split the data into training (non-nan) and prediction (nan)
     X_train = df.loc[complete_mask].drop(columns=[target_column])
     y_train = target[complete_mask]
     X_predict = df.loc[missing_mask].drop(columns=[target_column])
 
-    # Ensure there is enough data to train
-    if X_train.shape[0] < 10:  # Arbitrary threshold to ensure some training data exists
-        raise ValueError("Not enough data to train the model.")
-
-    # Train/test split for model validation
     X_train_split, X_valid_split, y_train_split, y_valid_split = train_test_split(
         X_train, y_train, test_size=0.05, random_state=42
     )
     device = ("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Train the XGBoost model
+    # train the XGBoost model
     model = XGBRegressor(
         n_estimators=10000,
         learning_rate=0.01,
@@ -65,16 +49,22 @@ def fill_missing_with_xgboost(df, target_column):
               eval_set=[(X_valid_split, y_valid_split)],
               verbose=False)
 
-    # Predict the missing values
+    # predict the missing values
     predictions = model.predict(X_predict)
 
-    # Fill the missing values in the original DataFrame
+    # fill the missing values in the original DataFrame
     df.loc[missing_mask, target_column] = predictions
 
     return df
 
 
 def has_long_nan_streak(series, threshold):
+    """Detect long continuous nan-value sequences in a series
+
+    :param series: series of floats, may contain nan
+    :param threshold: maximum continuous nan values in sequence in a row
+    :return: True if less that threshold nan-values in a row at any point in the series, otherwise False
+    """
     max_nan_streak = (series.isna().astype(int)
                       .groupby(series.notna().astype(int).cumsum())
                       .transform('sum').max())
@@ -142,26 +132,24 @@ def train_test_val_split(df, target_column):
 
 
 def plot_filled_values(df, target_column, missing_mask):
-    """
-    Plots the DataFrame, marking filled values.
+    """Plots the DataFrame, marking filled (previously nan) values.
 
-    Parameters:
-    - df (pd.DataFrame): The input DataFrame with filled values.
-    - target_column (str): The target column that was filled.
-    - missing_mask (pd.Series): A boolean mask indicating where NaN values were originally.
+    :param df: dataframe with filled nan-values in target column
+    :param target_column: column contained nan-values in the original dataframe
+    :param missing_mask: mask positions indication nan-values in target column from original dataframe
     """
     plt.figure(figsize=(10, 6))
     x = np.arange(df.shape[0])
 
-    # Plot all values in the column
+    # plot all values in the column
     plt.plot(x, df[target_column], label='Filled Values', color='blue')
 
-    # Highlight the originally missing values
+    # highlight the originally missing nan-values
     plt.scatter(
         x[missing_mask],
         df.loc[missing_mask, target_column],
         color='red',
-        label='Originally NaN',
+        label='Originally nan',
         zorder=5,
         marker='x',
         s=100
