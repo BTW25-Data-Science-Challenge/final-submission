@@ -193,6 +193,26 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
         :param learning_rate: learning rate
         :return: training history (losses while training, if available else None) [epoch | train_loss | test_loss]
         """
+        # Todo: preprocess dataset, so it can be used for LSTM predictions
+        #  [x] - scale values on training data
+        #  [ ] - delete columns with too many nan rows (select features)
+        #  [ ] - try to replace the nan rows in the other columns with approximated values
+        features = []
+
+        self.target_scaler = MinMaxScaler()
+        self.feature_scaler = MinMaxScaler()  # StandardScaler()
+
+        # the scalars are created on the known training data
+        X_train = X_train[features]
+        y_train = y_train.values
+
+        X_train = self.feature_scaler.fit_transform(X_train)
+        y_train = self.target_scaler.fit_transform(y_train.reshape(-1, 1))
+        X_test = self.feature_scaler.fit_transform(X_test)
+        y_test = self.target_scaler.fit_transform(y_test.reshape(-1, 1))
+        X_val = self.feature_scaler.fit_transform(X_val)
+        y_val = self.target_scaler.fit_transform(y_val.reshape(-1, 1))
+        # y_scaled = y.reshape(-1, 1)
 
         # convert dataset to tensors suitable for training the model
         X_train_tensors = self.__prepare_feature_dataset(X_train)
@@ -282,15 +302,6 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
         return df_result
 
     def __prepare_feature_dataset(self, X):
-        # scaler_min_max = MinMaxScaler()
-        # feature_scaler = MinMaxScaler()  # StandardScaler()
-        #
-        # X = data[features]
-        # y = data[target].values
-        #
-        # X_scaled = feature_scaler.fit_transform(X)
-        # y_scaled = scaler_min_max.fit_transform(y.reshape(-1, 1))
-        # # y_scaled = y.reshape(-1, 1)
 
         X_seq = self.__split_sequences(features_seq=X)
 
