@@ -1209,6 +1209,7 @@ start_time_entsoe = time.time()
 df4 = pd.read_csv('../final-submission/merged_data/data_collection/day_ahead_prices.csv')
 df4.columns.values[1] = 'day_ahead_prices_EURO'
 df4.drop(df4.columns[2], axis=1, inplace=True)
+df4.columns.values[1] = 'day_ahead_prices_EURO'
 df5 = pd.read_csv('../final-submission/merged_data/data_collection/load_forecast.csv')
 df5.drop(df5.columns[2], axis=1, inplace=True)
 df6 = pd.read_csv('../final-submission/merged_data/data_collection/generation_forecast.csv')
@@ -1312,7 +1313,12 @@ for i in range(13):
             final_df = working_df
     else:
         final_df = pd.merge(final_df, working_df, on=working_df.columns[0], how='inner', copy=True)
-    
+
+print('head final_df')
+print(final_df.head())
+final_df = final_df.drop_duplicates(subset=['Start_Date'], keep='first')
+
+
 final_df.to_csv(output_path, sep=',', index=False)
 
 #use gzip to compress .csv outputfile to <file_out>.gz
