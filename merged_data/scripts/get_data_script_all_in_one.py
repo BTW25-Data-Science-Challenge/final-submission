@@ -1207,6 +1207,7 @@ print(f'Ausführungszeit nach Stockmarket: {verstrichene_zeit} Sekunden')
 
 start_time_entsoe = time.time()
 df4 = pd.read_csv('../final-submission/merged_data/data_collection/day_ahead_prices.csv')
+df4.columns.values[1] = 'day_ahead_prices_EURO'
 df4.drop(df4.columns[2], axis=1, inplace=True)
 df5 = pd.read_csv('../final-submission/merged_data/data_collection/load_forecast.csv')
 df5.drop(df5.columns[2], axis=1, inplace=True)
