@@ -115,6 +115,12 @@ def run_preprocessing(df):
 
 
 def train_test_val_split(df, target_column):
+    """Split dataset on the in project determined timeranges for train, test, validation.
+
+    :param df: full input dataframe
+    :param target_column: column to predict/forecast later on
+    :returns: dataframes for X_train, y_train, X_test, y_test, X_val, y_val
+    """
     df['Date'] = pd.DatetimeIndex(df['Date'].values)
     df = df.set_index('Date')
     train_df = df[:pd.Timestamp('2023-11-30 23:00:00')]
@@ -162,10 +168,10 @@ def plot_filled_values(df, target_column, missing_mask):
     plt.show(block=True)
 
 
-if __name__ == '__main__':
-    datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-        '\\models\\LSTM_based', '\\data')
-    df = pd.read_csv(datasets_path + '\\allData_cleaned.csv', index_col=0)
-    j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
-    # run_preprocessing(df)
-    pass
+# if __name__ == '__main__':
+#     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
+#         '\\models\\LSTM_based', '\\data')
+#     df = pd.read_csv(datasets_path + '\\allData_cleaned.csv', index_col=0)
+#     j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
+#     # run_preprocessing(df)
+#     pass

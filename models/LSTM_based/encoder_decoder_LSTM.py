@@ -1,23 +1,10 @@
-import math
-import os
-from abc import ABC
-
-import joblib
 import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
-import inspect
-import warnings
-import datetime
-import optuna
-from plotly.io import show
+from torch.utils.data import DataLoader, TensorDataset
 
 # from preprocessing.outlier_detection import hampel_filter
 from models.base_model import BaseModel
@@ -33,15 +20,11 @@ class Attention(nn.Module):
         self.v = nn.Linear(hidden_dim, 1, bias=False)
 
     def forward(self, hidden, encoder_outputs):
+        """forward calculating the attention context and weights
+        :param hidden: (batch_size, 1, hidden_dim)
+        :param encoder_outputs: (batch_size, seq_len, hidden_dim)
+        :return: attention context and weights
         """
-
-        :param hidden:
-        :param encoder_outputs:
-        :return:
-        """
-        # hidden: (batch_size, 1, hidden_dim)
-        # encoder_outputs: (batch_size, seq_len, hidden_dim)
-
         # Repeat decoder hidden state across sequence length
         hidden = hidden.repeat(1, encoder_outputs.size(1), 1)  # (batch_size, seq_len, hidden_dim)
 
@@ -69,9 +52,14 @@ class Encoder(nn.Module):
         self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, bidirectional=bidir)
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_dim).to(x.device)
+        h0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_dim).to(x.device)    # if bidir
         c0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_dim).to(x.device)
+        # h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)    # not bidir
+        # c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
 
+        # output: (batch_size, seq_len, num_layer*hidden_dim)
+        # hidden: (num_layers*2, batch_size, hidden_dim)        -> *2 for num_layers if bidirectional=True
+        # cell: (num_layers*2, batch_size, hidden_dim)
         output, (hidden, cell) = self.lstm(x, (h0, c0))
         return output, hidden, cell
 
@@ -84,20 +72,27 @@ class Decoder(nn.Module):
         self.num_heads = num_heads
         # self.lstm = nn.LSTM(1 + hidden_dim, hidden_dim, num_layers, batch_first=True, bidirectional=True)
         self.lstm = nn.LSTM(1 + (2 * hidden_dim), hidden_dim, self.num_layers, batch_first=True, bidirectional=bidir)
-        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.fc = nn.Linear(hidden_dim*2, output_dim)
+
         self.attention = Attention(hidden_dim)
         # self.attention = MultiHeadAttention(hidden_dim, num_heads)
 
     def forward(self, x, hidden, cell, encoder_out):
         # Compute attention
+        # context: (batch_size, 1, hidden_dim*num_layers)
+        # att_weights: (batch_size, seq_len)
         context, att_weights = self.attention(hidden[-1].unsqueeze(1), encoder_out)
         # (batch_size, 1, hidden_dim), (batch_size, num_heads, 1, seq_len)
         # context, att_weights = self.attention(hidden[-1].unsqueeze(1), encoder_out, encoder_out)
 
         # Concatenate context vector and decoder input
-        x = torch.cat((x, context), dim=2)  # (batch_size, 1, hidden_dim + output_dim)
-        output, (hidden, cell) = self.lstm(x, (hidden[-1].unsqueeze(0), cell[-1].unsqueeze(0)))
-        # output, (hidden, cell) = self.lstm(x, (hidden, cell))
+        # x: (batch_size, 1, hidden_dim + output_dim)       - output_dim=1
+        x = torch.cat((x, context), dim=2)
+        # output: (batch_size, seq_len, num_layer*hidden_dim)
+        # hidden: (num_layers*2, batch_size, hidden_dim)        -> *2 for num_layers if bidirectional=True
+        # cell: (num_layers*2, batch_size, hidden_dim)
+        # output, (hidden, cell) = self.lstm(x, (hidden[-1].unsqueeze(0), cell[-1].unsqueeze(0)))
+        output, (hidden, cell) = self.lstm(x, (hidden, cell))
 
         prediction = self.fc(output)
         return prediction, hidden, cell, att_weights
@@ -130,47 +125,55 @@ class EncDecLSTM(nn.Module):
             decoder_input = torch.zeros(batch_size, 1, 1).to(x.device)
 
         out = torch.zeros(batch_size, self.target_length, 1).to(x.device)
+        # Todo: compare to zero init hidden and cell variables
 
         # step by step decoding
-        for t in range(self.target_length):
-            decoder_output, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
-            out[:, t, :] = decoder_output.squeeze(1)
-            decoder_input = decoder_output
+        # Todo: compare autoregressive decoding with seq2seq decoding (replace loop, torch.reshape..,
+        #  linear to seq length in decoder for fc)
+        out, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
+        # for t in range(self.target_length):
+        #     decoder_output, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
+        #     out[:, t, :] = decoder_output.squeeze(1)
+        #     decoder_input = decoder_output
 
-        out = torch.reshape(out, (out.size(0), out.size(1)))
+        # out = torch.reshape(out, (out.size(0), out.size(1)))
+        out = out.squeeze(1)
         out = self.activation(out)
         return out
 
 
-class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
-    def __init__(self, target_length):
-        super(EncoderDecoderAttentionLSTM, self).__init__()
+class EncoderDecoderAttentionLSTM(BaseModel):
+    def __init__(self, target_length, features, target):
+        self.target = target
+        self.features = features
         self.target_length = target_length
-        self.__create_model()
+        super(EncoderDecoderAttentionLSTM, self).__init__(model_name='EncDecAttLSTM',
+                                                          model_type='EncoderDecoderAttentionLSTM')
 
-    def __create_model(self, features: list | None = None):
+    def create_model(self):
         """Define your own model under self.model.
         """
-        if features is None:
-            features = []
         hidden_size = 64
-        num_layers = 2
+        num_layers = 3
         num_heads = 1
-        input_size = len(features)
+        input_size = len(self.features)
         self.output_length = 24
-        self.inpput_length = 24
-        output_size = 1
+        self.input_length = 24
+        # case seq2seq decoder: use output_size = self.output_length
+        # case autoregressive decoder: use output_size = 1
+        output_size = 24
 
-        Enc = Encoder(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers)
+        Enc = Encoder(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers, bidir=True)
         # Enc = EncoderWithFeatureAttention(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers)
-        Dec = Decoder(output_dim=output_size, hidden_dim=hidden_size, num_layers=num_layers, num_heads=num_heads)
+        Dec = Decoder(output_dim=output_size, hidden_dim=hidden_size, num_layers=num_layers, num_heads=num_heads,
+                      bidir=True)
         self.model = EncDecLSTM(encoder=Enc, decoder=Dec, target_length=self.output_length)
 
         # Check For GPU -> If available send model to it
         self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
-        self.activation = nn.Sigmoid()
+
 
         pass
 
@@ -180,7 +183,6 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
               learning_rate: float = 0.001) -> pd.DataFrame | None:
         """train the model on the training data.
         test and validation data can be used only for evaluation (if available).
-        ! Note: features (X) and target (y) values should be in range [0, 1]
 
         :param X_train: training features dataset
         :param y_train: training target values
@@ -193,25 +195,30 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
         :param learning_rate: learning rate
         :return: training history (losses while training, if available else None) [epoch | train_loss | test_loss]
         """
-        # Todo: preprocess dataset, so it can be used for LSTM predictions
-        #  [x] - scale values on training data
-        #  [ ] - delete columns with too many nan rows (select features)
-        #  [ ] - try to replace the nan rows in the other columns with approximated values
-        features = []
 
         self.target_scaler = MinMaxScaler()
-        self.feature_scaler = MinMaxScaler()  # StandardScaler()
+        self.feature_scaler = StandardScaler()  # MinMaxScaler()  #
 
-        # the scalars are created on the known training data
-        X_train = X_train[features]
-        y_train = y_train.values
+        # select features and target columns
+        if len(self.features) > 0:
+            # use only selected features (of self.features not defined: use all columns as features)
+            X_train = X_train[self.features]
+            X_test = X_test[self.features]
+            X_val = X_val[self.features]
+        y_train = y_train[self.target].values
+        y_test = y_test[self.target].values
+        y_val = y_val[self.target].values
 
-        X_train = self.feature_scaler.fit_transform(X_train)
-        y_train = self.target_scaler.fit_transform(y_train.reshape(-1, 1))
-        X_test = self.feature_scaler.fit_transform(X_test)
-        y_test = self.target_scaler.fit_transform(y_test.reshape(-1, 1))
-        X_val = self.feature_scaler.fit_transform(X_val)
-        y_val = self.target_scaler.fit_transform(y_val.reshape(-1, 1))
+        # fit scalar on training data
+        self.feature_scaler.fit(X_train)
+        self.target_scaler.fit(y_train.reshape(-1, 1))
+
+        X_train = self.feature_scaler.transform(X_train)
+        y_train = self.target_scaler.transform(y_train.reshape(-1, 1))
+        X_test = self.feature_scaler.transform(X_test)
+        y_test = self.target_scaler.transform(y_test.reshape(-1, 1))
+        X_val = self.feature_scaler.transform(X_val)
+        y_val = self.target_scaler.transform(y_val.reshape(-1, 1))
         # y_scaled = y.reshape(-1, 1)
 
         # convert dataset to tensors suitable for training the model
@@ -225,17 +232,18 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
         loss_fn = torch.nn.MSELoss()  # mean-squared error for regression
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
-        history = self.training_loop(n_epochs=n_epochs,
-                                     optimiser=optimizer,
-                                     loss_fn=loss_fn,
-                                     X_train=X_train_tensors,
-                                     y_train=y_train_tensors,
-                                     X_test=X_test_tensors,
-                                     y_test=y_test_tensors,
-                                     batch_size=batch_size)
+        history = self.__training_loop(n_epochs=n_epochs,
+                                       optimiser=optimizer,
+                                       loss_fn=loss_fn,
+                                       X_train=X_train_tensors,
+                                       y_train=y_train_tensors,
+                                       X_test=X_test_tensors,
+                                       y_test=y_test_tensors,
+                                       batch_size=batch_size)
+        return history
 
-    def training_loop(self, n_epochs, optimiser, loss_fn, X_train, y_train,
-                      X_test, y_test, batch_size):
+    def __training_loop(self, n_epochs, optimiser, loss_fn, X_train, y_train,
+                        X_test, y_test, batch_size):
         train_dataset = TensorDataset(X_train, y_train)
         test_dataset = TensorDataset(X_test, y_test)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
@@ -255,7 +263,7 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
                 outputs = self.model(seq, decoder_input)
                 optimiser.zero_grad()
 
-                loss = loss_fn(outputs, labels)
+                loss = torch.sqrt(loss_fn(outputs, labels))
                 # loss = loss * current_weight
                 loss.backward()
                 optimiser.step()
@@ -269,7 +277,7 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
                 decoder_input = seq[:, -1:, -1:]
                 test_preds = self.model(seq, decoder_input)
 
-                test_loss = loss_fn(test_preds, labels)
+                test_loss = torch.sqrt(loss_fn(test_preds, labels))
                 test_losses.append(test_loss.to('cpu').item())
             if epoch % 1 == 0:
                 print(
@@ -279,11 +287,14 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
                 train_history['train loss'].append((sum(train_losses) / len(train_losses)))
                 train_history['test loss'].append((sum(test_losses) / len(test_losses)))
 
+        import matplotlib.pyplot as plt
+        pd.DataFrame(train_history).set_index('epoch').plot()
+        plt.show(block=True)
+
         return train_history
 
-    def __run_prediction(self, X: pd.DataFrame) -> pd.DataFrame:
+    def run_prediction(self, X: pd.DataFrame) -> pd.DataFrame:
         """run prediction on your defined model.
-        ! Note: return predictions in range [0, 1]
 
         :param X: features dataset
         :return: prediction output, [timestamp | value]
@@ -295,7 +306,9 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
         predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
 
         pred_np = predictions.to('cpu').detach().numpy()
-        pred_sequence = np.reshape(pred_np[::48], pred_length).reshape(-1, 1).reshape(-1)
+        pred_sequence = np.reshape(pred_np[::self.output_length], pred_length).reshape(-1, 1).reshape(-1)
+
+        # Todo: rescale using the same scaler as used on trainings data !
 
         df_result = pd.DataFrame({'timestamp': timestamps,
                                   'day_ahead_price_predicted': pred_sequence})
@@ -303,13 +316,22 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
 
     def __prepare_feature_dataset(self, X):
 
-        X_seq = self.__split_sequences(features_seq=X)
+        X_seq = self.__split_feature_sequences(features_seq=X)
 
         X_tensor = Variable(torch.Tensor(X_seq))
-        X_tensor_format = torch.reshape(X_tensor, (X_tensor.shape[0], self.inpput_length, X_tensor.shape[2]))
+        X_tensor_format = torch.reshape(X_tensor, (X_tensor.shape[0], self.input_length, X_tensor.shape[2]))
         X_tensor_format = X_tensor_format.to(self.device)
 
         return X_tensor_format
+
+    def __prepare_target_dataset(self, y):
+
+        y_seq = self.__split_target_sequences(y)
+
+        y_tensor = Variable(torch.Tensor(y_seq))
+        y_tensor = y_tensor.to(self.device)
+
+        return y_tensor
 
     def __split_feature_sequences(self, features_seq):
         X = []  # instantiate X and y
@@ -343,23 +365,14 @@ class EncoderDecoderAttentionLSTM(BaseModel, nn.Module):
             y.append(seq_y)
         return np.asarray(y)
 
-    def __prepare_target_dataset(self, y):
-
-        y_seq = self.__split_target_sequences(y)
-
-        y_tensor = Variable(torch.Tensor(y_seq))
-        y_tensor = y_tensor.to(self.device)
-
-        return y_tensor
-
-    def __custom_save(self, model: object, filename: str):
+    def custom_save(self, model: object, filename: str):
         """Use your own dataformat to save your model here
 
         :param filename: filename or path
         """
         pass
 
-    def __custom_load(self, filename: str) -> object:
+    def custom_load(self, filename: str) -> object:
         """Use your own dataformat to load your model here
 
         :param filename: filename or path
