@@ -38,7 +38,7 @@ def fill_missing_with_xgboost(df, target_column):
 
     # train the XGBoost model
     model = XGBRegressor(
-        n_estimators=10000,
+        n_estimators=4000,
         learning_rate=0.01,
         max_depth=10,
         random_state=42,
@@ -73,8 +73,14 @@ def has_long_nan_streak(series, threshold):
 
 def run_preprocessing(df):
     time_n = time.time()
+    df = df.drop(['date', 'End_Date', 'STATIONS_ID_Muenchen_review', 'STATIONS_ID_KoelnBonn_review',
+                  'eor_KoelnBonn_review', 'eor_Muenchen_review'], axis=1)
+    df['is_holiday'] = df['is_holiday'].values.astype(int)
+    df['is_weekend'] = df['is_weekend'].values.astype(int)
+
     unique_df = df.loc[:, ~df.T.duplicated()]
 
+    unique_df['Date'] = df.index.values
     unique_df['Date'] = pd.DatetimeIndex(unique_df['Date'].values)
     unique_df = unique_df.set_index('Date')
     start_date = pd.Timestamp('2015-01-05 00:00:00')
@@ -99,16 +105,16 @@ def run_preprocessing(df):
         print(f'feature {i+1}: {c} done after: {int((time.time() - time_n)/60)}')
         # plot_filled_values(df=new_df, target_column=c, missing_mask=no_nan_streaks_df[c].isna())
 
-    new_df['hour'] = new_df['Date'].apply(lambda x: x.hour / 24)
-    new_df['month'] = new_df['Date'].apply(lambda x: x.month / 12)
-    new_df['day_of_week'] = new_df['Date'].apply(lambda x: x.day_of_week / 7)
+    new_df['Date'] = timestamps
+    new_df['hour'] = new_df['Date'].apply(lambda x: x.hour)
+    # new_df['month'] = new_df['Date'].apply(lambda x: x.month / 12)
+    # new_df['day_of_week'] = new_df['Date'].apply(lambda x: x.day_of_week / 7)
 
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data')
     new_df.to_csv(datasets_path + '\\allData_cleaned.csv')
 
     print(f'preprocessing done in: {int((time.time() - time_n)/60)}')
-    new_df['Date'] = timestamps
     print('done')
 
     pass
@@ -168,10 +174,12 @@ def plot_filled_values(df, target_column, missing_mask):
     plt.show(block=True)
 
 
-# if __name__ == '__main__':
-#     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-#         '\\models\\LSTM_based', '\\data')
-#     df = pd.read_csv(datasets_path + '\\allData_cleaned.csv', index_col=0)
-#     j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
-#     # run_preprocessing(df)
-#     pass
+if __name__ == '__main__':
+    datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
+        '\\models\\LSTM_based', '\\data')
+    datasets_load_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
+        '\\models\\LSTM_based', '\\merged_data')
+    df = pd.read_csv(datasets_load_path + '\\allData.csv', index_col=0)
+    # j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
+    run_preprocessing(df)
+    pass

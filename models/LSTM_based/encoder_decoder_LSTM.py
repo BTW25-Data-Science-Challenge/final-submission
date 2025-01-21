@@ -300,15 +300,20 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         :return: prediction output, [timestamp | value]
         """
         pred_length = X.shape[0]
+        X = X.reset_index(names='timestamp')
         timestamps = X['timestamp']
+        X = X.drop('timestamp')
 
+        # scale features using the training scaler
+        X = self.feature_scaler.transform(X[self.features])
         X_pred_tensors = self.__prepare_feature_dataset(X)
         predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
 
         pred_np = predictions.to('cpu').detach().numpy()
-        pred_sequence = np.reshape(pred_np[::self.output_length], pred_length).reshape(-1, 1).reshape(-1)
-
-        # Todo: rescale using the same scaler as used on trainings data !
+        pred_steps = pred_np[::self.output_length]
+        # rescale using training scaler and reshape into one continuous sequence
+        pred_sequence = self.target_scaler.inverse_transform(np.reshape(pred_steps,
+                                   pred_steps.shape[0]*pred_steps.shape[1]).reshape(-1, 1)).reshape(-1)
 
         df_result = pd.DataFrame({'timestamp': timestamps,
                                   'day_ahead_price_predicted': pred_sequence})
