@@ -143,7 +143,9 @@ class EncDecLSTM(nn.Module):
 
 
 class EncoderDecoderAttentionLSTM(BaseModel):
-    def __init__(self, target_length, features, target):
+    def __init__(self, target_length, features, target, hidden_size=64, num_layers=3):
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
         self.target = target
         self.features = features
         self.target_length = target_length
@@ -153,8 +155,6 @@ class EncoderDecoderAttentionLSTM(BaseModel):
     def create_model(self):
         """Define your own model under self.model.
         """
-        hidden_size = 64
-        num_layers = 3
         num_heads = 1
         input_size = len(self.features)
         self.output_length = 24
@@ -163,17 +163,15 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         # case autoregressive decoder: use output_size = 1
         output_size = 24
 
-        Enc = Encoder(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers, bidir=True)
+        Enc = Encoder(input_dim=input_size, hidden_dim=self.hidden_size, num_layers=self.num_layers, bidir=True)
         # Enc = EncoderWithFeatureAttention(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers)
-        Dec = Decoder(output_dim=output_size, hidden_dim=hidden_size, num_layers=num_layers, num_heads=num_heads,
-                      bidir=True)
+        Dec = Decoder(output_dim=output_size, hidden_dim=self.hidden_size, num_layers=self.num_layers,
+                      num_heads=num_heads, bidir=True)
         self.model = EncDecLSTM(encoder=Enc, decoder=Dec, target_length=self.output_length)
 
         # Check For GPU -> If available send model to it
         self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-
-
 
         pass
 
@@ -287,9 +285,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 train_history['train loss'].append((sum(train_losses) / len(train_losses)))
                 train_history['test loss'].append((sum(test_losses) / len(test_losses)))
 
-        import matplotlib.pyplot as plt
-        pd.DataFrame(train_history).set_index('epoch').plot()
-        plt.show(block=True)
+        # import matplotlib.pyplot as plt
+        train_history = pd.DataFrame(train_history).set_index('epoch')
+        # plt.show(block=True)
 
         return train_history
 
