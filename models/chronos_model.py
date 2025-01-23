@@ -1,3 +1,7 @@
+from base_model import BaseModel
+import torch
+
+
 class ChronosModel(BaseModel):
     def __init__(self, model_name: str, model_type: str):
         """Call the BaseModel constructor with the required arguments."""
@@ -30,29 +34,24 @@ class ChronosModel(BaseModel):
         return prediction_results
 
     
-    def _BaseModel__custom_load(self, filename):
+    def _BaseModel__custom_load(self, model_dir):
         # Directory to clone
-        github_repo_url = filename
-        local_dir = "./final-submission"
-
-        # Clone the repository if it doesn't already exist
-        if not os.path.exists(local_dir):
-            os.system(f"git clone {github_repo_url} {local_dir}")
-
-        # Path to the specific directory containing the checkpoint
-        checkpoint_dir = os.path.join(local_dir, "models/models/chronos-tiny-2015-1000/checkpoint-final")
         
         # Load the model pipeline
         pipeline = ChronosPipeline.from_pretrained(
-            checkpoint_dir,
+            model_dir,
             device_map=("cuda" if torch.cuda.is_available() else "cpu"),
             torch_dtype=torch.bfloat16,
         )
+        self.model = pipeline  # Set the model to the loaded pipeline
 
         return pipeline
+    
+    
                 
     def _BaseModel__custom_save(self, model = None, filename = None):
         return
 
     def train(self, X_train = None, y_train = None, X_val = None, y_val = None, X_test = None, y_test = None):
         return None
+    
