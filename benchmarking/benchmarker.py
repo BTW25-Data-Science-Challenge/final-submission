@@ -47,15 +47,18 @@ class BenchmarkMaker:
     def __create_full_df(self):
         pass
 
-    def __calc_errors(self):
-        gt_values = self.data['day_ahead_prices'].values
+    def calc_errors(self):
+        no_nan = self.data.copy(deep=True).dropna(how='any')
+        gt_values = no_nan['day_ahead_prices'].values
         for pred_model in self.model_names:
-            pred_values = self.data[pred_model].values
+            pred_values = no_nan[pred_model].values
             self.data[str(pred_model) + '_RMSE'] = self.calc_rmse(gt_values, pred_values)
             self.data[str(pred_model) + '_MAE'] = self.calc_mae(gt_values, pred_values)
             self.data[str(pred_model) + '_MAPE'] = self.calc_mape(gt_values, pred_values)
-            self.data[str(pred_model) + '_SE'] = self.calc_squared_error(gt_values, pred_values)
-            self.data[str(pred_model) + '_AE'] = self.calc_absolute_error(gt_values, pred_values)
+            self.data[str(pred_model) + '_SE'] = self.calc_squared_error(self.data['day_ahead_prices'].values,
+                                                                         self.data[pred_model].values)
+            self.data[str(pred_model) + '_AE'] = self.calc_absolute_error(self.data['day_ahead_prices'].values,
+                                                                          self.data[pred_model].values)
         pass
 
     def calc_squared_error(self, actual_values, predicted_values):
@@ -90,8 +93,8 @@ class BenchmarkMaker:
         return mape
 
     def plot_rmse_per_hour(self):
-        for k in self.predictions_data.keys():
-            plt.plot(self.predictions_data[k]['timestamp'], np.sqrt(self.predictions_data[k]['SE']), label=str(k))
+        for model in self.model_names:
+            plt.plot(self.data.index.values, np.sqrt(self.data[model + '_SE'].values), label=model)
         plt.xticks(rotation=45)
         plt.title('RMSE per Hour')
         plt.xlabel('Timestamp')
@@ -103,8 +106,8 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_mae_per_hour(self):
-        for k in self.predictions_data.keys():
-            plt.plot(self.predictions_data[k]['timestamp'], self.predictions_data[k]['AE'], label=str(k))
+        for model in self.model_names:
+            plt.plot(self.data.index.values, self.data[model + '_AE'].values, label=model)
         plt.xticks(rotation=45)
         plt.title('Absolute Error per Hour')
         plt.xlabel('Timestamp')
@@ -116,9 +119,10 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_rmse_per_day(self):
-        for k in self.predictions_data.keys():
-            days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(names='date')
-            plt.plot(days_df['timestamp'], np.sqrt(days_df['SE']), label=str(k))
+        copy_df = self.data.reset_index(names='timestamp')
+        for model in self.model_names:
+            days_df = copy_df.groupby(copy_df.timestamp.dt.date).mean().reset_index(names='date')
+            plt.plot(days_df['timestamp'], np.sqrt(days_df[model + '_SE']), label=model)
         plt.xticks(rotation=45)
         plt.title('RMSE per Day')
         plt.xlabel('Timestamp')
@@ -130,9 +134,10 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_mae_per_day(self):
-        for k in self.predictions_data.keys():
-            days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(names='date')
-            plt.plot(days_df['timestamp'], np.sqrt(days_df['AE']), label=str(k))
+        copy_df = self.data.reset_index(names='timestamp')
+        for model in self.model_names:
+            days_df = copy_df.groupby(copy_df.timestamp.dt.date).mean().reset_index(names='date')
+            plt.plot(days_df['timestamp'], np.sqrt(days_df[model + '_AE']), label=model)
         plt.xticks(rotation=45)
         plt.title('MAE per Day')
         plt.xlabel('Timestamp')
@@ -144,14 +149,13 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_predictions_hourly(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
-        timestamps = self.ground_truth_data['timestamp'].values
+        gt_values = self.data['day_ahead_prices'].values
+        timestamps = self.data.index.values
         plt.plot(timestamps, gt_values, label='Actual Values')
 
-        for k in self.predictions_data.keys():
-            timestamps = self.predictions_data[k]['timestamp'].values
-            pred_values = self.predictions_data[k]['day_ahead_prices_predicted'].values
-            plt.plot(timestamps, pred_values, label=str(k).replace('_predicted', ''))
+        for model in self.model_names:
+            pred_values = self.data[model].values
+            plt.plot(timestamps, pred_values, label=model)
 
         plt.xticks(rotation=45)
         plt.title('Model Predictions per Hour')
@@ -164,16 +168,17 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_predictions_daily(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
-        timestamps = self.ground_truth_data['timestamp'].values
+        gt_values = self.data['day_ahead_prices'].values
+        timestamps = self.data.index.values
         plt.plot(timestamps, gt_values, label='Actual Values')
 
-        for k in self.predictions_data.keys():
-            days_df = self.predictions_data[k].groupby(self.predictions_data[k].timestamp.dt.date).mean().reset_index(
+        copy_df = self.data.reset_index(names='timestamp')
+        for model in self.model_names:
+            days_df = copy_df.groupby(copy_df.timestamp.dt.date).mean().reset_index(
                 names='date')
             timestamps = days_df['timestamp'].values
-            pred_values = days_df['day_ahead_prices_predicted'].values
-            plt.plot(timestamps, pred_values, label=str(k).replace('_predicted', ''))
+            pred_values = days_df[model].values
+            plt.plot(timestamps, pred_values, label=model)
 
         plt.xticks(rotation=45)
         plt.title('Model Predictions per Day')
@@ -186,16 +191,14 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_mae(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
+        gt_values = self.data['day_ahead_prices'].values
 
         mae_values = []
-        names = []
-        for i, pred_model in enumerate(self.predictions_data.keys()):
-            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+        for model in self.model_names:
+            pred_values = self.data[model].values
             mae = self.calc_mae(gt_values, pred_values)
             mae_values.append(mae)
-            names.append(str(pred_model))
-        x = np.arange(len(self.predictions_data.keys()))
+        x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
@@ -212,7 +215,7 @@ class BenchmarkMaker:
         ax.set_ylabel('MAE')
         ax.set_xlabel('Model')
         ax.set_xticks(x)
-        ax.set_xticklabels(names)
+        ax.set_xticklabels(self.model_names)
         ax.set_ylim([0, max(mae_values) + 2])
         plt.tight_layout()
         if self.export_dir is not None:
@@ -220,16 +223,14 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_rmse(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
+        gt_values = self.data['day_ahead_prices'].values
 
         rmse_values = []
-        names = []
-        for i, pred_model in enumerate(self.predictions_data.keys()):
-            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+        for model in self.model_names:
+            pred_values = self.data[model].values
             rmse = self.calc_rmse(gt_values, pred_values)
             rmse_values.append(rmse)
-            names.append(str(pred_model).replace('_prediction', ''))
-        x = np.arange(len(self.predictions_data.keys()))
+        x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
@@ -246,7 +247,7 @@ class BenchmarkMaker:
         ax.set_ylabel('RMSE')
         ax.set_xlabel('Model')
         ax.set_xticks(x)
-        ax.set_xticklabels(names)
+        ax.set_xticklabels(self.model_names)
         ax.set_ylim([0, max(rmse_values) + 2])
         plt.tight_layout()
         if self.export_dir is not None:
@@ -254,16 +255,14 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_mape(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
+        gt_values = self.data['day_ahead_prices'].values
 
         mape_values = []
-        names = []
-        for i, pred_model in enumerate(self.predictions_data.keys()):
-            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
+        for model in self.model_names:
+            pred_values = self.data[model].values
             mape = self.calc_mape(gt_values, pred_values)
             mape_values.append(mape*100)
-            names.append(str(pred_model).replace('_prediction', ''))
-        x = np.arange(len(self.predictions_data.keys()))
+        x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
@@ -280,7 +279,7 @@ class BenchmarkMaker:
         ax.set_ylabel('MAPE in %')
         ax.set_xlabel('Model')
         ax.set_xticks(x)
-        ax.set_xticklabels(names)
+        ax.set_xticklabels(self.model_names)
         ax.set_ylim([0, 100])
         plt.tight_layout()
         if self.export_dir is not None:
@@ -288,10 +287,10 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_single_model(self, model_name: str = ''):
-        x = self.predictions_data[model_name].timestamp
-        y1 = self.predictions_data[model_name]['day_ahead_prices_predicted']
-        y2 = self.predictions_data[model_name]['AE']
-        y3 = self.predictions_data[model_name]['SE']
+        x = self.data.index.values
+        y1 = self.data[model_name].values
+        y2 = self.data[model_name + '_AE'].values
+        y3 = self.data[model_name + '_SE'].values
 
         fig, ax1 = plt.subplots()
 

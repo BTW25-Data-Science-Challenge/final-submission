@@ -241,6 +241,10 @@ def run_encoder_decoder_attention_LSTM():
 
     BenchMaker = BenchmarkMaker(export_dir='result')
     BenchMaker.load_dataframes(predictions={'EncDecLSTM': prediction_test_result}, prices=y_test)
+    BenchMaker.calc_errors()
+    r = BenchMaker.data
+
+    BenchMaker.plot_rmse_per_hour()
 
     pass
 
