@@ -946,7 +946,8 @@ def remove_columns_review(station_id):
         file_path = os.path.join(computing_folder_station, file)
         
         try:
-            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)
+            df = pd.read_csv(file_path, delimiter=";", skipinitialspace=True)            
+            df = df.drop(columns=[col for col in columns_remove_temp if col in df.columns])
             df.to_csv(file_path, sep=";", index=False)
             print(f"removed collums from {file}")
         
