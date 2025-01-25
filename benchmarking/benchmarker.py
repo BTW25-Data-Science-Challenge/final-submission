@@ -7,38 +7,14 @@ import os
 
 
 class BenchmarkMaker:
-    def __init__(self, config):
-        self.gt_name = config['ground_truth_file_name']
-        curr_dir = os.path.dirname(os.path.abspath(__file__))
-        self.input_file_names = os.listdir(curr_dir + '\\' + config['input_dir'])
-        self.export_dir = curr_dir + '\\' + config['export_dir']  # output for plots and benchmark .csv files
+    def __init__(self, export_dir):
+        self.export_dir = export_dir  # output for plots and benchmark .csv files
 
         # load input data
-        data = self.__load_data(dir=curr_dir + '\\' + config['input_dir'], file_names=self.input_file_names,
-                                tz=config['tz'])
-        self.predictions_data = {n: data[n] for n in data.keys() if n != self.gt_name.replace('.csv', '')}   # prediction results Dataframes
-        self.ground_truth_data = data[self.gt_name.replace('.csv', '')]   # gt df
+        self.data = None
+        self.model_names = []
 
-        # pred_data = self.ground_truth_data.copy(deep=True)
-        # r = np.random.randint(low=-10, high=10, size=pred_data.shape[0])
-        # pred_data['day_ahead_prices_predicted'] = pred_data['day_ahead_prices'].values + r
-        # pred_data = pred_data.drop('day_ahead_prices', axis=1)
-        # pred_data.to_csv(curr_dir + '\\' + config['input_dir'] + '\\' + 'biLSTM_prediction.csv')
-        #
-        # pred_data = self.ground_truth_data.copy(deep=True)
-        # r = np.random.randint(low=-10, high=10, size=pred_data.shape[0])
-        # pred_data['day_ahead_prices_predicted'] = pred_data['day_ahead_prices'].values + r
-        # pred_data = pred_data.drop('day_ahead_prices', axis=1)
-        # pred_data.to_csv(curr_dir + '\\' + config['input_dir'] + '\\' + 'XGBoost_prediction.csv')
-
-        # calculate errors for each model prediction
-        self.__calc_errors()
-
-        # combine dataframes
-        self.full_df = None
-        self.__create_full_df()
-
-    def __load_data(self, dir, file_names, tz):
+    def load_from_files(self, dir, file_names, tz):
         data = {n.replace('.csv', ''): pd.read_csv(dir + '\\' + n, index_col=0) for n in file_names}
         # adjust timestamp
         for k in data.keys():
@@ -48,18 +24,38 @@ class BenchmarkMaker:
             data[k]['timestamp'] = timestamp_range
         return data
 
+    def load_dataframes(self, predictions: dict, prices: pd.DataFrame):
+        """loading datasets of predictions from different models
+
+        :param predictions: dict form: {model_name1: df1, model_name2: df2, ...}
+        :param prices: ground truth prices dataframe
+        """
+        for k in predictions.keys():
+            predictions[k] = predictions[k].set_axis([str(k)], axis='columns')
+            self.model_names.append(str(k))
+        prices = prices.set_axis(['day_ahead_prices'], axis='columns')
+        self.align_dataframes(list(predictions.values()) + [prices])
+
+    def align_dataframes(self, dataframes):
+        """Align multiple DataFrames with timestamp indices by merging them on their index.
+        """
+        result_df = dataframes[0]
+        for df in dataframes[1:]:
+            result_df = result_df.join(df, how='outer')
+        self.data = result_df
+
     def __create_full_df(self):
         pass
 
     def __calc_errors(self):
-        gt_values = self.ground_truth_data['day_ahead_prices'].values
-        for pred_model in self.predictions_data.keys():
-            pred_values = self.predictions_data[pred_model]['day_ahead_prices_predicted'].values
-            self.predictions_data[pred_model]['RMSE'] = self.calc_rmse(gt_values, pred_values)
-            self.predictions_data[pred_model]['MAE'] = self.calc_mae(gt_values, pred_values)
-            self.predictions_data[pred_model]['MAPE'] = self.calc_mape(gt_values, pred_values)
-            self.predictions_data[pred_model]['SE'] = self.calc_squared_error(gt_values, pred_values)
-            self.predictions_data[pred_model]['AE'] = self.calc_absolute_error(gt_values, pred_values)
+        gt_values = self.data['day_ahead_prices'].values
+        for pred_model in self.model_names:
+            pred_values = self.data[pred_model].values
+            self.data[str(pred_model) + '_RMSE'] = self.calc_rmse(gt_values, pred_values)
+            self.data[str(pred_model) + '_MAE'] = self.calc_mae(gt_values, pred_values)
+            self.data[str(pred_model) + '_MAPE'] = self.calc_mape(gt_values, pred_values)
+            self.data[str(pred_model) + '_SE'] = self.calc_squared_error(gt_values, pred_values)
+            self.data[str(pred_model) + '_AE'] = self.calc_absolute_error(gt_values, pred_values)
         pass
 
     def calc_squared_error(self, actual_values, predicted_values):

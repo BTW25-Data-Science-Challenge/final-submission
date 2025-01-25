@@ -104,4 +104,4 @@ class BaseModel(ABC):
 
         :param exp_dir: dir name or path to dir
         """
-        self.model = self.__custom_load(filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')
+        self.model = self.custom_load(filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')

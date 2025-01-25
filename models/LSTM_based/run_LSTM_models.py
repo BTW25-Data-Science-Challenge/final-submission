@@ -10,6 +10,7 @@ import joblib
 
 from models.LSTM_based.dataset_preparation import train_test_val_split
 from models.LSTM_based.encoder_decoder_LSTM import EncoderDecoderAttentionLSTM
+from benchmarking.benchmarker import BenchmarkMaker
 
 torch.manual_seed(0)
 
@@ -135,8 +136,7 @@ class SaveStudyCallback:
 
 
 def run_encoder_decoder_attention_LSTM():
-    optimize_hyperparameters()
-
+    # optimize_hyperparameters()
 
     # load dataset
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
@@ -208,25 +208,39 @@ def run_encoder_decoder_attention_LSTM():
     # split into train, test, val
     X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(df, target_column=target)
 
-
-    df_pred_test = pd.read_csv('results_prediction.csv')
-    y_compare = y_test.copy(deep=True)[:df_pred_test.shape[0]]
-    y_compare['pred'] = df_pred_test['day_ahead_price_predicted'].values
-    import matplotlib.pyplot as plt
-    y_compare.plot()
-    plt.show(block=True)
+    # df_pred_test = pd.read_csv('results_prediction.csv')
+    # y_compare = y_test.copy(deep=True)[:df_pred_test.shape[0]]
+    # y_compare['pred'] = df_pred_test['day_ahead_price_predicted'].values
+    # import matplotlib.pyplot as plt
+    # y_compare.plot()
+    # plt.show(block=True)
 
     # define model
-    model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target)
+    model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
+                                        hidden_size=112, num_layers=6)
 
     # train model
-    training_history = model.train(X_train=X_train, y_train=y_train,
-                                   X_val=X_val, y_val=y_val,
-                                   X_test=X_test, y_test=y_test,
-                                   n_epochs=500, batch_size=1024, learning_rate=0.001)
+    # training_history = model.train(X_train=X_train, y_train=y_train,
+    #                                X_val=X_val, y_val=y_val,
+    #                                X_test=X_test, y_test=y_test,
+    #                                n_epochs=1000, batch_size=1024, learning_rate=0.001)
+    #
+    # # store the model
+    # model.custom_save(model.model, filename='BiEncDecAttLSTM.pth')
+
+    # load the model
+    m = model.custom_load(filename='BiEncDecAttLSTM.pth')
+
+    # create feature and target scalers in training data
+    model.create_scalers(X_train, y_train)
 
     # predict on model
-    prediction_result = model.predict(X=X_test, exp_dir=None)
+    prediction_train_result = model.predict(X=X_train, exp_dir=None).set_index('timestamp')
+    prediction_test_result = model.predict(X=X_test, exp_dir=None).set_index('timestamp')
+    prediction_val_result = model.predict(X=X_val, exp_dir=None).set_index('timestamp')
+
+    BenchMaker = BenchmarkMaker(export_dir='result')
+    BenchMaker.load_dataframes(predictions={'EncDecLSTM': prediction_test_result}, prices=y_test)
 
     pass
 

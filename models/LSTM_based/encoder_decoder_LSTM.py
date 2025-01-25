@@ -250,6 +250,8 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         train_history = {'epoch': [], 'train loss': [], 'test loss': []}
         # timestep_weights = np.asarray(generate_linear_weights(len(train_loader)))
 
+        min_loss = 1000
+        model_state = self.model.state_dict()
         for epoch in range(n_epochs):
             train_losses = []
             self.model.train()
@@ -284,14 +286,32 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 train_history['epoch'].append(epoch + 1)
                 train_history['train loss'].append((sum(train_losses) / len(train_losses)))
                 train_history['test loss'].append((sum(test_losses) / len(test_losses)))
+            if min_loss > (sum(test_losses) / len(test_losses)):
+                model_state = self.model.state_dict()
+                min_loss = (sum(test_losses) / len(test_losses))
 
         # import matplotlib.pyplot as plt
         train_history = pd.DataFrame(train_history).set_index('epoch')
         # plt.show(block=True)
+        torch.save(model_state, f'BiEncDecAttLSTM.pth')
 
         return train_history
 
-    def run_prediction(self, X: pd.DataFrame) -> pd.DataFrame:
+    def create_scalers(self, X_train, y_train):
+        self.target_scaler = MinMaxScaler()
+        self.feature_scaler = StandardScaler()
+
+        # select features and target columns
+        if len(self.features) > 0:
+            # use only selected features (of self.features not defined: use all columns as features)
+            X_train = X_train[self.features]
+        y_train = y_train[self.target].values
+
+        # fit scalar on training data
+        self.feature_scaler.fit(X_train)
+        self.target_scaler.fit(y_train.reshape(-1, 1))
+
+    def run_prediction(self, X: pd.DataFrame, batch_size=1024) -> pd.DataFrame:
         """run prediction on your defined model.
 
         :param X: features dataset
@@ -300,20 +320,28 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         pred_length = X.shape[0]
         X = X.reset_index(names='timestamp')
         timestamps = X['timestamp']
-        X = X.drop('timestamp')
+        X = X.drop(['timestamp'], axis=1)
 
         # scale features using the training scaler
         X = self.feature_scaler.transform(X[self.features])
         X_pred_tensors = self.__prepare_feature_dataset(X)
-        predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
-
-        pred_np = predictions.to('cpu').detach().numpy()
+        dataset = TensorDataset(X_pred_tensors)
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        pred_list = []
+        for seq in data_loader:
+            X_batch = seq[0]
+            decoder_input = X_batch[:, -1:, -1:]
+            predictions = self.model.forward(X_batch, decoder_input)
+            pred_list.append(predictions.to('cpu').detach().numpy())
+        # predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
+        pred_np = np.concatenate(pred_list)
+        # pred_np = predictions.to('cpu').detach().numpy()
         pred_steps = pred_np[::self.output_length]
+        pred_shaped = np.reshape(pred_steps, pred_steps.shape[0] * pred_steps.shape[1]).reshape(-1, 1)
         # rescale using training scaler and reshape into one continuous sequence
-        pred_sequence = self.target_scaler.inverse_transform(np.reshape(pred_steps,
-                                   pred_steps.shape[0]*pred_steps.shape[1]).reshape(-1, 1)).reshape(-1)
+        pred_sequence = self.target_scaler.inverse_transform(pred_shaped).reshape(-1)
 
-        df_result = pd.DataFrame({'timestamp': timestamps,
+        df_result = pd.DataFrame({'timestamp': timestamps[:pred_sequence.shape[0]],
                                   'day_ahead_price_predicted': pred_sequence})
         return df_result
 
@@ -337,32 +365,32 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         return y_tensor
 
     def __split_feature_sequences(self, features_seq):
-        X = []  # instantiate X and y
+        X = []  # instantiate X
         for i in range(len(features_seq)):
             # find the end of the input, output sequence
             end_ix = i + self.input_length
             out_end_ix = end_ix + self.output_length  # - 1
             # check if we are beyond the dataset
-            if out_end_ix > len(features_seq):
-                break
-            # if end_ix > len(features_seq):
+            # if out_end_ix > len(features_seq):
             #     break
+            if end_ix > len(features_seq):
+                break
             # gather input and output of the pattern
             seq_x = features_seq[i:end_ix]
             X.append(seq_x)
         return np.asarray(X)
 
     def __split_target_sequences(self, target_seq):
-        y = []  # instantiate X and y
+        y = []  # instantiate y
         for i in range(len(target_seq)):
             # find the end of the input, output sequence
             end_ix = i + self.input_length
             out_end_ix = end_ix + self.output_length  # - 1
             # check if we are beyond the dataset
-            if out_end_ix > len(target_seq):
-                break
-            # if end_ix > len(features_seq):
+            # if out_end_ix > len(target_seq):
             #     break
+            if end_ix > len(target_seq):
+                break
             # gather input and output of the pattern
             seq_y = target_seq[i:end_ix, -1]
             y.append(seq_y)
@@ -373,6 +401,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
 
         :param filename: filename or path
         """
+        torch.save(self.model.state_dict(), filename)
         pass
 
     def custom_load(self, filename: str) -> object:
@@ -381,4 +410,6 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         :param filename: filename or path
         :return: your loaded model
         """
-        pass
+        self.model.load_state_dict(torch.load(filename))
+        self.model.eval()
+        return self.model
