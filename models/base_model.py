@@ -20,10 +20,10 @@ class BaseModel(ABC):
         self.model_name = model_name
         self.model_type = model_type
         self.model = None  # this is a placeholder for your model
-        self.__create_model()
+        self.create_model()
 
     @abstractmethod
-    def __create_model(self):
+    def create_model(self):
         """Define your own model under self.model.
         """
         ...
@@ -48,7 +48,7 @@ class BaseModel(ABC):
         ...
 
     @abstractmethod
-    def __run_prediction(self, X: pd.DataFrame) -> pd.DataFrame:
+    def run_prediction(self, X: pd.DataFrame) -> pd.DataFrame:
         """run prediction on your defined model
 
         :param X: features dataset
@@ -65,7 +65,7 @@ class BaseModel(ABC):
         :return: prediction output, [timestamp | value]
         """
         # run your custom prediction
-        prediction_results = self.__run_prediction(X)
+        prediction_results = self.run_prediction(X)
 
         # store if dir is provided
         if exp_dir is not None:
@@ -73,7 +73,7 @@ class BaseModel(ABC):
         return prediction_results
 
     @abstractmethod
-    def __custom_save(self, model: object, filename: str):
+    def custom_save(self, model: object, filename: str):
         """Use your own dataformat to save your model here
 
         :param filename: filename or path
@@ -81,7 +81,7 @@ class BaseModel(ABC):
         ...
 
     @abstractmethod
-    def __custom_load(self, filename: str) -> object:
+    def custom_load(self, filename: str) -> object:
         """Use your own dataformat to load your model here
 
         :param filename: filename or path
@@ -96,7 +96,7 @@ class BaseModel(ABC):
 
         :param exp_dir: dir name or path to dir
         """
-        self.__custom_save(model=self.model, filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')
+        self.custom_save(model=self.model, filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')
 
     @final
     def load(self, exp_dir: str):
@@ -104,4 +104,4 @@ class BaseModel(ABC):
 
         :param exp_dir: dir name or path to dir
         """
-        self.model = self.__custom_load(filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')
+        self.model = self.custom_load(filename=f'{exp_dir}\\{self.model_type}_{self.model_name}')
