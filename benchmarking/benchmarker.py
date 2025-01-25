@@ -1,6 +1,5 @@
 import pandas as pd
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
-from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -48,9 +47,6 @@ class BenchmarkMaker:
             result_df = result_df.join(df, how='outer')
         self.data = result_df
 
-    def __create_full_df(self):
-        pass
-
     def calc_errors(self):
         no_nan = self.data.copy(deep=True).dropna(how='any')
         gt_values = no_nan['day_ahead_prices'].values
@@ -90,10 +86,6 @@ class BenchmarkMaker:
         :param actual_values: correct underlying values
         :param predicted_values: forecasted values
         :return: mape"""
-        actual_values = np.asarray([(lambda i: i + 0.1 if i == 0 else i)(n) for n in actual_values])
-        # scaler = MinMaxScaler()
-        # y_true_scaled = scaler.fit_transform(actual_values.reshape(-1, 1)).flatten()
-        # y_pred_scaled = scaler.transform(predicted_values.reshape(-1, 1)).flatten()
         mape = mean_absolute_percentage_error(actual_values, predicted_values)
         return mape
 
