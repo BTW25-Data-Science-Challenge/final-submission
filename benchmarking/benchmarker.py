@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -9,6 +9,10 @@ import os
 class BenchmarkMaker:
     def __init__(self, export_dir):
         self.export_dir = export_dir  # output for plots and benchmark .csv files
+
+        if not os.path.exists(self.export_dir):
+            # create the directory in case it does not already exist
+            os.makedirs(self.export_dir)
 
         # load input data
         self.data = None
@@ -86,10 +90,11 @@ class BenchmarkMaker:
         :param actual_values: correct underlying values
         :param predicted_values: forecasted values
         :return: mape"""
-        scaler = StandardScaler()
-        y_true_scaled = scaler.fit_transform(actual_values.reshape(-1, 1)).flatten()
-        y_pred_scaled = scaler.transform(predicted_values.reshape(-1, 1)).flatten()
-        mape = mean_absolute_percentage_error(y_true_scaled, y_pred_scaled)
+        actual_values = np.asarray([(lambda i: i + 0.1 if i == 0 else i)(n) for n in actual_values])
+        # scaler = MinMaxScaler()
+        # y_true_scaled = scaler.fit_transform(actual_values.reshape(-1, 1)).flatten()
+        # y_pred_scaled = scaler.transform(predicted_values.reshape(-1, 1)).flatten()
+        mape = mean_absolute_percentage_error(actual_values, predicted_values)
         return mape
 
     def plot_rmse_per_hour(self):
@@ -168,15 +173,15 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_predictions_daily(self):
-        gt_values = self.data['day_ahead_prices'].values
-        timestamps = self.data.index.values
+        copy_df = self.data.reset_index(names='timestamp')
+        days_df = copy_df.groupby(copy_df.timestamp.dt.date).mean().reset_index(
+            names='date')
+        timestamps = days_df['timestamp'].values
+
+        gt_values = days_df['day_ahead_prices'].values
         plt.plot(timestamps, gt_values, label='Actual Values')
 
-        copy_df = self.data.reset_index(names='timestamp')
         for model in self.model_names:
-            days_df = copy_df.groupby(copy_df.timestamp.dt.date).mean().reset_index(
-                names='date')
-            timestamps = days_df['timestamp'].values
             pred_values = days_df[model].values
             plt.plot(timestamps, pred_values, label=model)
 
@@ -191,19 +196,20 @@ class BenchmarkMaker:
         plt.show(block=True)
 
     def plot_compare_mae(self):
-        gt_values = self.data['day_ahead_prices'].values
+        no_nan = self.data.copy(deep=True).dropna(how='any')
+        gt_values = no_nan['day_ahead_prices'].values
 
         mae_values = []
         for model in self.model_names:
-            pred_values = self.data[model].values
+            pred_values = no_nan[model].values
             mae = self.calc_mae(gt_values, pred_values)
             mae_values.append(mae)
         x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
-        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
-        bar = ax.bar(x, mae_values, width=0.4, align='center', label='MAE', color=my_cmap(rescale(mae_values)))
+        colors = my_cmap(np.linspace(0, 1, len(self.model_names)))
+        bar = ax.bar(x, mae_values, width=0.4, align='center', label='MAE', color=colors)
 
         def digit_label(rects):
             for rect in rects:
@@ -216,26 +222,27 @@ class BenchmarkMaker:
         ax.set_xlabel('Model')
         ax.set_xticks(x)
         ax.set_xticklabels(self.model_names)
-        ax.set_ylim([0, max(mae_values) + 2])
+        ax.set_ylim([0, max(mae_values) + 5])
         plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_mae.png')
         plt.show(block=True)
 
     def plot_compare_rmse(self):
-        gt_values = self.data['day_ahead_prices'].values
+        no_nan = self.data.copy(deep=True).dropna(how='any')
+        gt_values = no_nan['day_ahead_prices'].values
 
         rmse_values = []
         for model in self.model_names:
-            pred_values = self.data[model].values
+            pred_values = no_nan[model].values
             rmse = self.calc_rmse(gt_values, pred_values)
             rmse_values.append(rmse)
         x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
-        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
-        bar = ax.bar(x, rmse_values, width=0.4, align='center', label='RMSE', color=my_cmap(rescale(rmse_values)))
+        colors = my_cmap(np.linspace(0, 1, len(self.model_names)))
+        bar = ax.bar(x, rmse_values, width=0.4, align='center', label='RMSE', color=colors)
 
         def digit_label(rects):
             for rect in rects:
@@ -248,26 +255,27 @@ class BenchmarkMaker:
         ax.set_xlabel('Model')
         ax.set_xticks(x)
         ax.set_xticklabels(self.model_names)
-        ax.set_ylim([0, max(rmse_values) + 2])
+        ax.set_ylim([0, max(rmse_values) + 5])
         plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_rmse.png')
         plt.show(block=True)
 
     def plot_compare_mape(self):
-        gt_values = self.data['day_ahead_prices'].values
+        no_nan = self.data.copy(deep=True).dropna(how='any')
+        gt_values = no_nan['day_ahead_prices'].values
 
         mape_values = []
         for model in self.model_names:
-            pred_values = self.data[model].values
-            mape = self.calc_mape(gt_values, pred_values)
-            mape_values.append(mape*100)
+            pred_values = no_nan[model].values
+            mape = self.calc_mae(gt_values, pred_values)
+            mape_values.append(mape / abs(no_nan[model].max() - no_nan[model].min()) * 100)
         x = np.arange(len(self.model_names))
 
         ax = plt.subplot(111)
         my_cmap = plt.get_cmap("jet")
-        rescale = lambda y: (y - np.min(y)) / (np.max(y) - np.min(y))
-        bar = ax.bar(x, mape_values, width=0.4, align='center', label='MAPE', color=my_cmap(rescale(mape_values)))
+        colors = my_cmap(np.linspace(0, 1, len(self.model_names)))
+        bar = ax.bar(x, mape_values, width=0.4, align='center', label='MAPE', color=colors)
 
         def digit_label(rects):
             for rect in rects:
