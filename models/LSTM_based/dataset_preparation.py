@@ -8,6 +8,15 @@ from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import torch
 import time
+from sklearn.preprocessing import FunctionTransformer
+
+
+def sin_transformer(period):
+    return FunctionTransformer(lambda x: np.sin(x / period * 2 * np.pi))
+
+
+def cos_transformer(period):
+    return FunctionTransformer(lambda x: np.cos(x / period * 2 * np.pi))
 
 
 def fill_missing_with_xgboost(df, target_column):

@@ -8,19 +8,11 @@ from plotly.io import show
 import torch
 import joblib
 
-from models.LSTM_based.dataset_preparation import train_test_val_split
+from models.LSTM_based.dataset_preparation import train_test_val_split, sin_transformer, cos_transformer
 from models.LSTM_based.encoder_decoder_LSTM import EncoderDecoderAttentionLSTM
 from benchmarking.benchmarker import BenchmarkMaker
 
 torch.manual_seed(0)
-
-
-def sin_transformer(period):
-    return FunctionTransformer(lambda x: np.sin(x / period * 2 * np.pi))
-
-
-def cos_transformer(period):
-    return FunctionTransformer(lambda x: np.cos(x / period * 2 * np.pi))
 
 
 def optimize_hyperparameters():
