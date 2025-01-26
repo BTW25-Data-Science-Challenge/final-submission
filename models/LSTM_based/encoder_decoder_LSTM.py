@@ -149,6 +149,8 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         self.target = target
         self.features = features
         self.target_length = target_length
+        # Check For GPU -> If available send model and data to it
+        self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         super(EncoderDecoderAttentionLSTM, self).__init__(model_name='EncDecAttLSTM',
                                                           model_type='EncoderDecoderAttentionLSTM')
 
@@ -157,7 +159,6 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         """
         num_heads = 1
         input_size = len(self.features)
-        self.output_length = 24
         self.input_length = 24
         # case seq2seq decoder: use output_size = self.output_length
         # case autoregressive decoder: use output_size = 1
@@ -167,13 +168,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         # Enc = EncoderWithFeatureAttention(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers)
         Dec = Decoder(output_dim=output_size, hidden_dim=self.hidden_size, num_layers=self.num_layers,
                       num_heads=num_heads, bidir=True)
-        self.model = EncDecLSTM(encoder=Enc, decoder=Dec, target_length=self.output_length)
+        self.model = EncDecLSTM(encoder=Enc, decoder=Dec, target_length=self.target_length)
 
-        # Check For GPU -> If available send model to it
-        self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-
-        pass
 
     def train(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_val: pd.DataFrame = None,
               y_val: pd.DataFrame = None, X_test: pd.DataFrame = None,
@@ -336,7 +333,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         # predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
         pred_np = np.concatenate(pred_list)
         # pred_np = predictions.to('cpu').detach().numpy()
-        pred_steps = pred_np[::self.output_length]
+        pred_steps = pred_np[::self.target_length]
         pred_shaped = np.reshape(pred_steps, pred_steps.shape[0] * pred_steps.shape[1]).reshape(-1, 1)
         # rescale using training scaler and reshape into one continuous sequence
         pred_sequence = self.target_scaler.inverse_transform(pred_shaped).reshape(-1)
@@ -369,10 +366,6 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         for i in range(len(features_seq)):
             # find the end of the input, output sequence
             end_ix = i + self.input_length
-            out_end_ix = end_ix + self.output_length  # - 1
-            # check if we are beyond the dataset
-            # if out_end_ix > len(features_seq):
-            #     break
             if end_ix > len(features_seq):
                 break
             # gather input and output of the pattern
@@ -385,10 +378,6 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         for i in range(len(target_seq)):
             # find the end of the input, output sequence
             end_ix = i + self.input_length
-            out_end_ix = end_ix + self.output_length  # - 1
-            # check if we are beyond the dataset
-            # if out_end_ix > len(target_seq):
-            #     break
             if end_ix > len(target_seq):
                 break
             # gather input and output of the pattern
