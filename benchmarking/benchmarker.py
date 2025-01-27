@@ -148,12 +148,13 @@ class BenchmarkMaker:
     def plot_compare_predictions_hourly(self):
         gt_values = self.data['day_ahead_prices'].values
         timestamps = self.data.index.values
-        plt.plot(timestamps, gt_values, label='Actual Values')
+
 
         for model in self.model_names:
             pred_values = self.data[model].values
             plt.plot(timestamps, pred_values, label=model)
 
+        plt.plot(timestamps, gt_values, label='Actual Values')
         plt.xticks(rotation=45)
         plt.title('Model Predictions per Hour')
         plt.ylabel('Day Ahead Price in €')
