@@ -62,7 +62,7 @@ class MultivariateBiLSTM(BaseModel):
               X_test: pd.DataFrame = None, y_test: pd.DataFrame = None,
               n_epochs=500, batch_size=1024, learning_rate=0.001) -> pd.DataFrame | None:
         self.target_scaler = MinMaxScaler()
-        self.feature_scaler = MinMaxScaler()
+        self.feature_scaler = StandardScaler()
 
         # select features and target columns
         if len(self.features) > 0:
@@ -100,7 +100,6 @@ class MultivariateBiLSTM(BaseModel):
                                        y_test=y_test_tensors,
                                        batch_size=batch_size,
                                        learning_rate=learning_rate)
-        pass
 
     def __training_loop(self, n_epochs, X_train, y_train, X_test, y_test, batch_size, learning_rate):
         train_dataset = TensorDataset(X_train, y_train)
@@ -251,4 +250,3 @@ class MultivariateBiLSTM(BaseModel):
         :param filename: filename or path
         """
         torch.save(self.model.state_dict(), filename)
-        pass
