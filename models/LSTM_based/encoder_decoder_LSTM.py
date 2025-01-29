@@ -39,7 +39,7 @@ class Attention(nn.Module):
         attn_weights = torch.softmax(scores, dim=1)  # (batch_size, seq_len)
 
         # Compute context vector as weighted sum of encoder outputs
-        context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)  # (batch_size, 1, hidden_dim)
+        context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)  # (batch_size, 1, hidden_dim*num_dir)
 
         return context, attn_weights
 
@@ -65,34 +65,48 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, output_dim=1, hidden_dim=16, num_layers=1, num_heads=4, bidir=False):
+    def __init__(self, output_dim=1, hidden_dim=16, num_layers=1, num_heads=4, bidir=False, use_attention=True):
         super(Decoder, self).__init__()
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.num_heads = num_heads
-        # self.lstm = nn.LSTM(1 + hidden_dim, hidden_dim, num_layers, batch_first=True, bidirectional=True)
-        self.lstm = nn.LSTM(1 + (2 * hidden_dim), hidden_dim, self.num_layers, batch_first=True, bidirectional=bidir)
+        self.use_attention = use_attention
+        self.lstm = nn.LSTM((2 * hidden_dim), hidden_dim, self.num_layers, batch_first=True,
+                            bidirectional=bidir)
         self.fc = nn.Linear(hidden_dim*2, output_dim)
-
         self.attention = Attention(hidden_dim)
         # self.attention = MultiHeadAttention(hidden_dim, num_heads)
 
     def forward(self, x, hidden, cell, encoder_out):
-        # Compute attention
-        # context: (batch_size, 1, hidden_dim*num_layers)
-        # att_weights: (batch_size, seq_len)
-        context, att_weights = self.attention(hidden[-1].unsqueeze(1), encoder_out)
-        # (batch_size, 1, hidden_dim), (batch_size, num_heads, 1, seq_len)
-        # context, att_weights = self.attention(hidden[-1].unsqueeze(1), encoder_out, encoder_out)
+        """Calculate decoder output using attention from encoder input.
+
+        :param x: decoder input, shape: (batch_size, 1, encoder_out_dim)
+        :param hidden: encoder hidden state, shape: (num_layers*num_directions, batch_size, hidden_dim)
+        :param cell: encoder cell state, shape: (num_layers*num_directions, batch_size, hidden_dim)
+        :param encoder_out: encoder output, shape: (batch_size, seq_len, hidden_dim*num_directions)
+        :return: decoder output, shape: (batch_size, 1, seq_len)
+        """
+        if self.use_attention:
+            # Compute attention
+            # context: (batch_size, 1, hidden_dim*num_directions)
+            # att_weights: (batch_size, seq_len)
+            context, att_weights = self.attention(hidden[-1].unsqueeze(1), encoder_out)
+        else:
+            # use equal attention weights
+            seq_len = encoder_out.shape[1]
+            batch_size = x.shape[0]
+            value = 1 / seq_len
+            att_weights = torch.full((batch_size, seq_len), value, device=x.device)
+            context = torch.bmm(att_weights.unsqueeze(1), encoder_out)
 
         # Concatenate context vector and decoder input
-        # x: (batch_size, 1, hidden_dim + output_dim)       - output_dim=1
-        x = torch.cat((x, context), dim=2)
+        # x: (batch_size, 1, hidden_dim*num_directions + enc_output_dim)
+        # x = torch.cat((x, context), dim=2)
+
         # output: (batch_size, seq_len, num_layer*hidden_dim)
         # hidden: (num_layers*2, batch_size, hidden_dim)        -> *2 for num_layers if bidirectional=True
         # cell: (num_layers*2, batch_size, hidden_dim)
-        # output, (hidden, cell) = self.lstm(x, (hidden[-1].unsqueeze(0), cell[-1].unsqueeze(0)))
-        output, (hidden, cell) = self.lstm(x, (hidden, cell))
+        output, (hidden, cell) = self.lstm(context, (hidden, cell))
 
         prediction = self.fc(output)
         return prediction, hidden, cell, att_weights
@@ -106,7 +120,7 @@ class EncDecLSTM(nn.Module):
         self.target_length = target_length
         self.activation = nn.Sigmoid()
 
-    def forward(self, x: torch.Tensor, dec_init=None):
+    def forward(self, x: torch.Tensor, dec_init=None, teacher_forcing_ratio=0.5, target_values=None):
         """Forward pass the input sequences, containing feature space through the
         Encoder-Attention-Decoder model and output the predicted sequence
 
@@ -134,7 +148,10 @@ class EncDecLSTM(nn.Module):
         # for t in range(self.target_length):
         #     decoder_output, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
         #     out[:, t, :] = decoder_output.squeeze(1)
-        #     decoder_input = decoder_output
+        #
+        #     teacher_force = torch.rand(1).item() < teacher_forcing_ratio
+        #     decoder_input = target_values[:, t].unsqueeze(1).unsqueeze(1) if teacher_force and target_values is not None else decoder_output
+        #     # ecoder_input = decoder_output
 
         # out = torch.reshape(out, (out.size(0), out.size(1)))
         out = out.squeeze(1)
@@ -143,12 +160,13 @@ class EncDecLSTM(nn.Module):
 
 
 class EncoderDecoderAttentionLSTM(BaseModel):
-    def __init__(self, target_length, features, target, hidden_size=64, num_layers=3):
+    def __init__(self, target_length, features, target, hidden_size=64, num_layers=3, use_attention=True):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.target = target
         self.features = features
         self.target_length = target_length
+        self.use_attention = use_attention
         # Check For GPU -> If available send model and data to it
         self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         super(EncoderDecoderAttentionLSTM, self).__init__(model_name='EncDecAttLSTM',
@@ -167,7 +185,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         Enc = Encoder(input_dim=input_size, hidden_dim=self.hidden_size, num_layers=self.num_layers, bidir=True)
         # Enc = EncoderWithFeatureAttention(input_dim=input_size, hidden_dim=hidden_size, num_layers=num_layers)
         Dec = Decoder(output_dim=output_size, hidden_dim=self.hidden_size, num_layers=self.num_layers,
-                      num_heads=num_heads, bidir=True)
+                      num_heads=num_heads, bidir=True, use_attention=self.use_attention)
         self.model = EncDecLSTM(encoder=Enc, decoder=Dec, target_length=self.target_length)
 
         self.model = self.model.to(self.device)
@@ -247,9 +265,13 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         train_history = {'epoch': [], 'train loss': [], 'test loss': []}
         # timestep_weights = np.asarray(generate_linear_weights(len(train_loader)))
 
+        tr = 0.5
+        tr_reduce = tr / n_epochs
+
         min_loss = 1000
         model_state = self.model.state_dict()
         for epoch in range(n_epochs):
+            # tr -= tr_reduce
             train_losses = []
             self.model.train()
             timestep = 0
@@ -257,7 +279,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
             for seq, labels in train_loader:
                 # current_weight = timestep_weights[timestep]
                 decoder_input = seq[:, -1:, -1:]
-                outputs = self.model(seq, decoder_input)
+                outputs = self.model.forward(seq, decoder_input, teacher_forcing_ratio=tr, target_values=labels)
                 optimiser.zero_grad()
 
                 loss = torch.sqrt(loss_fn(outputs, labels))
@@ -290,7 +312,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         # import matplotlib.pyplot as plt
         train_history = pd.DataFrame(train_history).set_index('epoch')
         # plt.show(block=True)
-        torch.save(model_state, f'BiEncDecAttLSTM.pth')
+        # torch.save(model_state, f'BiEncDecAttLSTM.pth')
 
         return train_history
 
@@ -314,6 +336,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         :param X: features dataset
         :return: prediction output, [timestamp | value]
         """
+        self.model.eval()
         pred_length = X.shape[0]
         X = X.reset_index(names='timestamp')
         timestamps = X['timestamp']
