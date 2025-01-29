@@ -20,7 +20,9 @@ class MultivarLSTM(nn.Module):
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
                             num_layers=num_layers, batch_first=True, dropout=0.2,
                             bidirectional=True)
-        self.linear = nn.Linear(hidden_size * 24 * 2, output_size)
+        self.linear_1 = nn.Linear(hidden_size * 6 * 2, output_size)        # 6144
+        # self.linear_2 = nn.Linear(hidden_size, 256)
+        # self.linear_3 = nn.Linear(256, output_size)
 
         self.activation = nn.Sigmoid()
 
@@ -33,8 +35,13 @@ class MultivarLSTM(nn.Module):
         # propagate input through LSTM
         output, (hn, cn) = self.lstm(x, (h_0, c_0))  # (input, hidden, and internal state)
         # reduce dimension to the required output sequence length
-        predictions = self.linear(output.reshape(output.size(0), output.size(1) * output.size(2)))
+        predictions = self.linear_1(output.reshape(output.size(0), output.size(1) * output.size(2)))
+        # hn = hn.view(-1, self.hidden_size)
         pred_out = self.activation(predictions)
+        # pred_out = self.linear_2(pred_out)
+        # pred_out = self.activation(pred_out)
+        # pred_out = self.linear_3(pred_out)
+        # pred_out = self.activation(pred_out)
 
         return pred_out
 
@@ -43,9 +50,9 @@ class MultivariateBiLSTM(BaseModel):
     def __init__(self, features, target):
         self.features = features
         self.target = target
-        self.input_length = 24
-        self.hidden_layer_size = 256
-        self.num_layers = 12
+        self.input_length = 6
+        self.hidden_layer_size = 32
+        self.num_layers = 2
         self.output_length = 24
         # Check For GPU -> If available send model and data to it
         self.device = ("cuda" if torch.cuda.is_available() else "cpu")
@@ -195,12 +202,13 @@ class MultivariateBiLSTM(BaseModel):
         return y_tensor
 
     def __split_feature_sequences(self, features_seq):
-        X = []  # instantiate X and y
+        X = []  # instantiate X
+        length_limit = max([self.input_length, self.output_length])
         for i in range(len(features_seq)):
             # find the end of the sequence
             end_ix = i + self.input_length
             # check if we are beyond the dataset
-            if end_ix > len(features_seq):
+            if i + length_limit > len(features_seq):
                 break
             # gather input and output of the pattern
             seq_x = features_seq[i:end_ix]
@@ -209,11 +217,12 @@ class MultivariateBiLSTM(BaseModel):
 
     def __split_target_sequences(self, target_seq):
         y = []  # instantiate y
+        length_limit = max([self.input_length, self.output_length])
         for i in range(len(target_seq)):
             # find the end of the sequence
-            end_ix = i + self.input_length
+            end_ix = i + self.output_length
             # check if we are beyond the dataset
-            if end_ix > len(target_seq):
+            if i + length_limit > len(target_seq):
                 break
             # gather input and output of the pattern
             seq_y = target_seq[i:end_ix, -1]

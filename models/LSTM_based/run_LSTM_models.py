@@ -144,6 +144,10 @@ def run_encoder_decoder_attention_LSTM():
 
     df['month_sin'] = sin_transformer(12).fit_transform(df['month'].values)
     df['month_cos'] = cos_transformer(12).fit_transform(df["month"].values)
+
+    df['renew_total'] = df['E_solar_forecast_MWh'].values + df['E_wind_forecast_MWh'].values + df['E_wind_forecast_MWh.1'].values
+
+    df['delta_renew_load'] = df['Forecasted Load'].values - df['renew_total'].values
     # prepare dataset for LSTM
     features = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
                 'E_crossborder_DK_2_actual_MWh', 'E_crossborder_SE_4_actual_MWh', 'E_crossborder_DK_1_actual_MWh',
@@ -182,6 +186,10 @@ def run_encoder_decoder_attention_LSTM():
                 'stationPressure_hPa_Muenchen_review', 'surfacePressure_hPa_Muenchen_review', 'Covid factor', 'month',
                 'weekday', 'week_of_year', 'is_weekend', 'is_holiday', 'hour', 'prev_range_prices',
                 'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos']
+    features2 = ['renew_total', 'delta_renew_load', 'Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
+                 'is_weekend', 'is_holiday',
+                 'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos',
+                 'prev_range_prices']
     target = 'day_ahead_prices_EURO'
 
     # split into train, test, val
@@ -196,19 +204,19 @@ def run_encoder_decoder_attention_LSTM():
 
     # define model
     model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
-                                        hidden_size=112, num_layers=6)
-
+                                        hidden_size=256, num_layers=6, use_attention=False)
+    # 112, 6
     # train model
     training_history = model.train(X_train=X_train, y_train=y_train,
                                    X_val=X_val, y_val=y_val,
                                    X_test=X_test, y_test=y_test,
-                                   n_epochs=1000, batch_size=1024, learning_rate=0.001)
+                                   n_epochs=1000, batch_size=2048, learning_rate=0.001)
 
     # store the model
-    model.custom_save(model.model, filename='BiEncDecAttLSTM_hidden.pth')
+    # model.custom_save(model.model, filename='BiEncDecAttLSTM.pth')
 
     # load the model
-    m = model.custom_load(filename='BiEncDecAttLSTM.pth')
+    # m = model.custom_load(filename='BiEncDecAttLSTM.pth')
 
     # create feature and target scalers in training data
     model.create_scalers(X_train, y_train)
@@ -252,7 +260,7 @@ def run_multivariate_LSTM():
     df['month_sin'] = sin_transformer(12).fit_transform(df['month'].values)
     df['month_cos'] = cos_transformer(12).fit_transform(df["month"].values)
     # prepare dataset for LSTM
-    features = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
+    features2 = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
                 'E_crossborder_DK_2_actual_MWh', 'E_crossborder_SE_4_actual_MWh', 'E_crossborder_DK_1_actual_MWh',
                 'E_crossborder_FR_actual_MWh', 'E_crossborder_CH_actual_MWh', 'E_crossborder_NL_actual_MWh',
                 'E_crossborder_sum_actual_MWh', 'E_crossborder_CZ_actual_MWh', 'E_crossborder_PL_actual_MWh', 'Oil WTI',
@@ -289,6 +297,9 @@ def run_multivariate_LSTM():
                 'stationPressure_hPa_Muenchen_review', 'surfacePressure_hPa_Muenchen_review', 'Covid factor', 'month',
                 'weekday', 'week_of_year', 'is_weekend', 'is_holiday', 'hour', 'prev_range_prices',
                 'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos']
+    features1 = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
+                'is_weekend', 'is_holiday', 'prev_range_prices',
+                'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos']
     target = 'day_ahead_prices_EURO'
 
     # split into train, test, val
@@ -302,7 +313,7 @@ def run_multivariate_LSTM():
     # plt.show(block=True)
 
     # define model
-    model1 = MultivariateBiLSTM(features=features, target=target)
+    model1 = MultivariateBiLSTM(features=features2, target=target)
 
     # train model
     # training_history = model1.train(X_train=X_train, y_train=y_train,
@@ -314,14 +325,22 @@ def run_multivariate_LSTM():
     model1.custom_load('MultivarLSTM.pth')
     prediction1 = model1.run_prediction(X_test).set_index('timestamp')
 
-    model2 = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
-                                         hidden_size=112, num_layers=6)
+    model2 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
+                                         hidden_size=256, num_layers=6, use_attention=True)
     model2.custom_load(filename='BiEncDecAttLSTM.pth')
     model2.create_scalers(X_train, y_train)
     prediction2 = model2.run_prediction(X_test).set_index('timestamp')
 
+    model3 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
+                                         hidden_size=112, num_layers=6, use_attention=False)
+    model3.custom_load(filename='BiEncDecLSTM.pth')
+    model3.create_scalers(X_train, y_train)
+    prediction3 = model3.run_prediction(X_test).set_index('timestamp')
+
     BenchMaker = BenchmarkMaker(export_dir='result')
-    BenchMaker.load_dataframes(predictions={'MultivarLSTM': prediction1, 'EncDecLSTM': prediction2}, prices=y_test)
+    BenchMaker.load_dataframes(predictions={'MultivarLSTM': prediction1,
+                                            'EncDecAttLSTM': prediction2,
+                                            'EncDecLSTM': prediction3}, prices=y_val)
     BenchMaker.calc_errors()
 
     BenchMaker.plot_rmse_per_hour()
