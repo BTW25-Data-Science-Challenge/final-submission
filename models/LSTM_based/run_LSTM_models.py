@@ -323,24 +323,24 @@ def run_multivariate_LSTM():
 
     model1.create_scalers(X_train, y_train)
     model1.custom_load('MultivarLSTM.pth')
-    prediction1 = model1.run_prediction(X_val).set_index('timestamp')
+    prediction1 = model1.run_prediction(X_test).set_index('timestamp')
 
     model2 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
                                          hidden_size=256, num_layers=6, use_attention=True)
     model2.custom_load(filename='BiEncDecAttLSTM.pth')
     model2.create_scalers(X_train, y_train)
-    prediction2 = model2.run_prediction(X_val).set_index('timestamp')
+    prediction2 = model2.run_prediction(X_test).set_index('timestamp')
 
     model3 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
-                                         hidden_size=256, num_layers=6, use_attention=False)
+                                         hidden_size=256, num_layers=6, use_attention=True)
     model3.custom_load(filename='BiEncDecLSTM.pth')
     model3.create_scalers(X_train, y_train)
-    prediction3 = model3.run_prediction(X_val).set_index('timestamp')
+    prediction3 = model3.run_prediction(X_test).set_index('timestamp')
 
     BenchMaker = BenchmarkMaker(export_dir='result')
     BenchMaker.load_dataframes(predictions={'MultivarLSTM': prediction1,
                                             'EncDecAttLSTM': prediction2,
-                                            'EncDecLSTM': prediction3}, prices=y_val)
+                                            'EncDecLSTM': prediction3}, prices=y_test)
     BenchMaker.calc_errors()
 
     BenchMaker.plot_rmse_per_hour()
