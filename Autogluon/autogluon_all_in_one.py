@@ -4,7 +4,6 @@ import numpy as np # type: ignore
 from autogluon.timeseries import TimeSeriesPredictor # type: ignore
 from autogluon.common import space # type: ignore
 from datetime import datetime, timedelta
-import holidays  # type: ignore #Bibliothek für Feiertage
 import os
 from matplotlib import pyplot as plt # type: ignore
 import seaborn as sns # type: ignore
@@ -12,17 +11,16 @@ import time
 import tensorflow as tf # type: ignore
 import csv
 from dateutil.relativedelta import relativedelta
-import shutil
 from sklearn.metrics import *
 
 def dataset_Setup(dataset):
     #CSV-Datei laden
-    if dataset=='all':
-        file_path = "/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/allData.csv"
+    file_path = "/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/allData.csv"
+    #file_path = "../final-submission/merged_data/allData.csv"
+    if dataset=='all':        
         loaded_dataframe = "AllData.csv"
         data = pd.read_csv(file_path)
-    elif dataset=='less':
-        file_path = "/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/allData.csv"
+    elif dataset=='less':       
         columns_to_load = [
             "Date", "Forecasted Load", "day_ahead_prices_EURO", "Actual Aggregated", "Oil WTI", 
             "Natural Gas", "Coal", "Uran", "actual_E_Total_Gridload_MWh", "actual_E_Residual_Load_MWh", 
@@ -37,7 +35,6 @@ def dataset_Setup(dataset):
         data = pd.read_csv(file_path, usecols=columns_to_load)
         print(data.head())
     elif dataset=='dayhead':
-        file_path = "/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/allData.csv"
         loaded_dataframe = "Dayahead only"
         df = pd.read_csv(file_path)
         data = df[["Date", "day_ahead_prices_EURO"]]
@@ -106,7 +103,7 @@ def train_autogluon(set_preset,set_time_limit,dataset,provide_known_covariables,
     add_path=f"{script_start_time}_{set_preset}_{dataset}"
     output_folder_train_ag=os.path.join(output_folder_autogluon, add_path)
     #output_folder = f"/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/AG-Preset/{script_start_time}_{set_preset}_{dataset}"
-    os.makedirs(output_folder_autogluon_train_ag, exist_ok=True)  #Ordner erstellen, falls er nicht existiert
+    os.makedirs(output_folder_train_ag, exist_ok=True)  #Ordner erstellen, falls er nicht existiert
     
         
     data['item_id'] = 'item_1'    
@@ -229,18 +226,7 @@ def train_autogluon(set_preset,set_time_limit,dataset,provide_known_covariables,
         print("Feature Importance saved.")
     except ValueError as e:
         print("Feature importance could not be computed:", e)
-    if provide_known_covariables:
-        predictions_c = predictor.predict(test_data,known_covariates=known_covariates)
-    else:
-        predictions_c = predictor.predict(test_data)
-    actual_values = test_data[predictor.target].iloc[-predictions_c.shape[0]:]
-    predictor.leaderboard(test_data)
-    mse = (actual_values.values - predictions_c['mean']) ** 2  # MSE for each prediction
-    mape = np.abs((actual_values.values - predictions_c['mean']) / actual_values.values) * 100  # MAPE for each prediction
-    mean_mse = np.mean(mse)
-    mean_mape = np.mean(mape)
-    print(f"Mean MSE: {mean_mse}")
-    print(f"Mean MAPE: {mean_mape}")    
+    
     start_time = test_data["timestamp"].min()
     end_time = test_data["timestamp"].max()
     print(f"Starttime: {start_time}, endtime: {end_time}")
@@ -252,8 +238,6 @@ def train_autogluon(set_preset,set_time_limit,dataset,provide_known_covariables,
         current_day_data = data[            
             (data["timestamp"] < current_time)
         ]
-        #(data["timestamp"] >= current_time - relativedelta(months=6)) &
-        
         if not current_day_data.empty:
             if provide_known_covariables:
                 predicted_values = predictor.predict(current_day_data,known_covariates=known_covariates)
@@ -292,7 +276,7 @@ def train_autogluon(set_preset,set_time_limit,dataset,provide_known_covariables,
     y_true = comparison["actual_price"]
     y_pred = comparison["predicted"]
     mae_sklearn= mae_sklearn = mean_absolute_error(y_true, y_pred)
-    rmse_sklearn = root_mean_squared_error(y_true, y_pred, squared=False)    
+    rmse_sklearn = root_mean_squared_error(y_true, y_pred)    
 
     print(f"Alle Ergebnisse wurden im Ordner '{output_folder_train_ag}' gespeichert.")
     duration_skript=  time.time() - start_time_script
@@ -312,15 +296,14 @@ def train_autogluon(set_preset,set_time_limit,dataset,provide_known_covariables,
         "Dataset": dataset,
         "Modelpreset": set_preset,
         "Knowncoavariables": provide_known_covariables,
-        "MAE SKlearn:": mae_sklearn,
-        "RMSE SKlearn:": rmse_sklearn,
+        "MAE SKlearn": mae_sklearn,
+        "RMSE SKlearn": rmse_sklearn,
         "Duration": duration_skript,        
         "Date":script_start_time,
     }
 
     #write to csv
     file_path_csv =os.path.join(output_folder_autogluon, "preset-comparison.csv")
-    #file_path_csv ='/data/horse/ws/fewa833b-time-series-forecast/AutoGluon/Felix/AG-Preset/preset-comparison.csv'
     file_exists = os.path.isfile(file_path_csv)
     with open(file_path_csv, mode="a", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=data.keys())
