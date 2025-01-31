@@ -1,0 +1,103 @@
+Frequency 'H' stored as 'h'
+Beginning AutoGluon training... Time limit = 6000s
+AutoGluon will save models to '/data/cat/ws/jori152b-datacomp/output/newsapi/2025-01-28_16-30-59'
+=================== System Info ===================
+AutoGluon Version:  1.2
+Python Version:     3.9.12
+Operating System:   Linux
+Platform Machine:   x86_64
+Platform Version:   #1 SMP PREEMPT_DYNAMIC Fri Aug 30 09:45:56 EDT 2024
+CPU Count:          64
+GPU Count:          1
+Memory Avail:       678.10 GB / 755.08 GB (89.8%)
+Disk Space Avail:   783434.15 GB / 1052773.20 GB (74.4%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': RMSE,
+ 'freq': 'h',
+ 'hyperparameters': 'default',
+ 'known_covariates_names': [],
+ 'num_val_windows': 1,
+ 'prediction_length': 24,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 6000,
+ 'verbosity': 2}
+
+Provided train_data has 649 rows, 1 time series. Median time series length is 649 (min=649, max=649). 
+
+Provided data contains following columns:
+	target: 'target'
+
+AutoGluon will gauge predictive performance using evaluation metric: 'RMSE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2025-01-28 16:31:00
+Models that will be trained: ['SeasonalNaive', 'RecursiveTabular', 'DirectTabular', 'NPTS', 'DynamicOptimizedTheta', 'AutoETS', 'ChronosZeroShot[bolt_base]', 'ChronosFineTuned[bolt_small]', 'TemporalFusionTransformer', 'DeepAR', 'PatchTST', 'TiDE']
+Training timeseries model SeasonalNaive. Training for up to 461.2s of the 5995.9s of remaining time.
+	-94.2247      = Validation score (-RMSE)
+	0.01    s     = Training runtime
+	11.75   s     = Validation (prediction) runtime
+Training timeseries model RecursiveTabular. Training for up to 498.7s of the 5984.1s of remaining time.
+	-95.5457      = Validation score (-RMSE)
+	14.46   s     = Training runtime
+	0.32    s     = Validation (prediction) runtime
+Training timeseries model DirectTabular. Training for up to 542.7s of the 5969.3s of remaining time.
+	-56.9938      = Validation score (-RMSE)
+	10.98   s     = Training runtime
+	0.07    s     = Validation (prediction) runtime
+Training timeseries model NPTS. Training for up to 595.8s of the 5958.2s of remaining time.
+	-29.7011      = Validation score (-RMSE)
+	0.01    s     = Training runtime
+	7.47    s     = Validation (prediction) runtime
+Training timeseries model DynamicOptimizedTheta. Training for up to 668.8s of the 5950.7s of remaining time.
+	-41.9916      = Validation score (-RMSE)
+	0.01    s     = Training runtime
+	58.32   s     = Validation (prediction) runtime
+Training timeseries model AutoETS. Training for up to 756.0s of the 5892.3s of remaining time.
+	-31.4144      = Validation score (-RMSE)
+	0.01    s     = Training runtime
+	14.54   s     = Validation (prediction) runtime
+Training timeseries model ChronosZeroShot[bolt_base]. Training for up to 879.6s of the 5877.7s of remaining time.
+	-46.9142      = Validation score (-RMSE)
+	24.13   s     = Training runtime
+	2.08    s     = Validation (prediction) runtime
+Training timeseries model ChronosFineTuned[bolt_small]. Training for up to 1050.3s of the 5851.5s of remaining time.
+	Skipping covariate_regressor since the dataset contains no covariates or static features.
+	Saving fine-tuned model to /data/cat/ws/jori152b-datacomp/output/newsapi/2025-01-28_16-30-59/models/ChronosFineTuned[bolt_small]/W0/fine-tuned-ckpt
+	-66.6327      = Validation score (-RMSE)
+	59.84   s     = Training runtime
+	0.03    s     = Validation (prediction) runtime
+Training timeseries model TemporalFusionTransformer. Training for up to 1297.9s of the 5791.6s of remaining time.
+	-45.7353      = Validation score (-RMSE)
+	46.34   s     = Training runtime
+	0.02    s     = Validation (prediction) runtime
+Training timeseries model DeepAR. Training for up to 1715.1s of the 5745.2s of remaining time.
+	-36.8054      = Validation score (-RMSE)
+	18.49   s     = Training runtime
+	0.11    s     = Validation (prediction) runtime
+Training timeseries model PatchTST. Training for up to 2563.3s of the 5726.5s of remaining time.
+	-44.0653      = Validation score (-RMSE)
+	13.10   s     = Training runtime
+	0.02    s     = Validation (prediction) runtime
+Training timeseries model TiDE. Training for up to 5113.4s of the 5713.4s of remaining time.
+	-57.7550      = Validation score (-RMSE)
+	43.86   s     = Training runtime
+	0.02    s     = Validation (prediction) runtime
+Fitting simple weighted ensemble.
+	Ensemble weights: {'AutoETS': 0.39, 'NPTS': 0.61}
+	-28.4545      = Validation score (-RMSE)
+	0.89    s     = Training runtime
+	22.01   s     = Validation (prediction) runtime
+Training complete. Models trained: ['SeasonalNaive', 'RecursiveTabular', 'DirectTabular', 'NPTS', 'DynamicOptimizedTheta', 'AutoETS', 'ChronosZeroShot[bolt_base]', 'ChronosFineTuned[bolt_small]', 'TemporalFusionTransformer', 'DeepAR', 'PatchTST', 'TiDE', 'WeightedEnsemble']
+Total runtime: 331.39 s
+Best model: WeightedEnsemble
+Best model score: -28.4545
+Model not specified in predict, will default to the model with the best validation score: WeightedEnsemble
