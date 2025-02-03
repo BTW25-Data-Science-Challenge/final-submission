@@ -1,0 +1,9 @@
+# autogluon
+# statsmodels
+python-dotenv
+entsoe-py
+newsapi-python
+# sentence-transformers
+pandas
+numpy
+tenacity
