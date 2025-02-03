@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import numpy as np
 import torch
@@ -5,6 +7,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
+import copy
 
 # from preprocessing.outlier_detection import hampel_filter
 from models.base_model import BaseModel
@@ -71,9 +74,9 @@ class Decoder(nn.Module):
         self.num_layers = num_layers
         self.num_heads = num_heads
         self.use_attention = use_attention
-        self.lstm = nn.LSTM((2 * hidden_dim), hidden_dim, self.num_layers, batch_first=True,
+        self.lstm = nn.LSTM(10 + (2 * hidden_dim), hidden_dim, self.num_layers, batch_first=True,
                             bidirectional=bidir)
-        self.fc = nn.Linear(hidden_dim*2, output_dim)
+        self.fc = nn.Linear(hidden_dim*2, 1)
         self.attention = Attention(hidden_dim)
         # self.attention = MultiHeadAttention(hidden_dim, num_heads)
 
@@ -101,12 +104,13 @@ class Decoder(nn.Module):
 
         # Concatenate context vector and decoder input
         # x: (batch_size, 1, hidden_dim*num_directions + enc_output_dim)
-        # x = torch.cat((x, context), dim=2)
+        x = x.repeat(1, 1, 10)
+        x = torch.cat((x, context), dim=2)
 
         # output: (batch_size, seq_len, num_layer*hidden_dim)
         # hidden: (num_layers*2, batch_size, hidden_dim)        -> *2 for num_layers if bidirectional=True
         # cell: (num_layers*2, batch_size, hidden_dim)
-        output, (hidden, cell) = self.lstm(context, (hidden, cell))
+        output, (hidden, cell) = self.lstm(x, (hidden, cell))
 
         prediction = self.fc(output)
         return prediction, hidden, cell, att_weights
@@ -144,17 +148,17 @@ class EncDecLSTM(nn.Module):
         # step by step decoding
         # Todo: compare autoregressive decoding with seq2seq decoding (replace loop, torch.reshape..,
         #  linear to seq length in decoder for fc)
-        out, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
-        # for t in range(self.target_length):
-        #     decoder_output, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
-        #     out[:, t, :] = decoder_output.squeeze(1)
-        #
-        #     teacher_force = torch.rand(1).item() < teacher_forcing_ratio
-        #     decoder_input = target_values[:, t].unsqueeze(1).unsqueeze(1) if teacher_force and target_values is not None else decoder_output
-        #     # ecoder_input = decoder_output
+        # out, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
+        for t in range(self.target_length):
+            decoder_output, hidden, cell, attn_weights = self.decoder(decoder_input, hidden, cell, encoder_output)
+            out[:, t, :] = decoder_output.squeeze(1)
 
-        # out = torch.reshape(out, (out.size(0), out.size(1)))
-        out = out.squeeze(1)
+            teacher_force = torch.rand(1).item() < teacher_forcing_ratio
+            decoder_input = target_values[:, t].unsqueeze(1).unsqueeze(1) if teacher_force and target_values is not None else decoder_output
+            # ecoder_input = decoder_output
+
+        out = torch.reshape(out, (out.size(0), out.size(1)))
+        # out = out.squeeze(1)
         out = self.activation(out)
         return out
 
@@ -210,7 +214,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         """
 
         self.target_scaler = MinMaxScaler()
-        self.feature_scaler = StandardScaler()  # MinMaxScaler()  #
+        self.feature_scaler = StandardScaler()  #
 
         # select features and target columns
         if len(self.features) > 0:
@@ -242,7 +246,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         X_val_tensors = self.__prepare_feature_dataset(X_val)
         y_val_tensors = self.__prepare_target_dataset(y_val)
 
-        loss_fn = torch.nn.MSELoss()  # mean-squared error for regression
+        loss_fn = torch.nn.L1Loss()  # mean-squared error for regression
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
         history = self.__training_loop(n_epochs=n_epochs,
@@ -264,7 +268,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
 
         train_history = {'epoch': [], 'train loss': [], 'test loss': []}
         # timestep_weights = np.asarray(generate_linear_weights(len(train_loader)))
-
+        print(datetime.datetime.now())
         tr = 0.5
         tr_reduce = tr / n_epochs
 
@@ -282,7 +286,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 outputs = self.model.forward(seq, decoder_input, teacher_forcing_ratio=tr, target_values=labels)
                 optimiser.zero_grad()
 
-                loss = torch.sqrt(loss_fn(outputs, labels))
+                loss = loss_fn(outputs, labels)
                 # loss = loss * current_weight
                 loss.backward()
                 optimiser.step()
@@ -296,7 +300,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 decoder_input = seq[:, -1:, -1:]
                 test_preds = self.model(seq, decoder_input)
 
-                test_loss = torch.sqrt(loss_fn(test_preds, labels))
+                test_loss = loss_fn(test_preds, labels)
                 test_losses.append(test_loss.to('cpu').item())
             if epoch % 1 == 0:
                 print(
@@ -306,7 +310,8 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 train_history['train loss'].append((sum(train_losses) / len(train_losses)))
                 train_history['test loss'].append((sum(test_losses) / len(test_losses)))
             if min_loss > (sum(test_losses) / len(test_losses)):
-                model_state = self.model.state_dict()
+                model_state = copy.deepcopy(self.model.state_dict())
+                # torch.save(model_state, f'BiEncDecAttLSTM_small_autoreg_val.pth')
                 min_loss = (sum(test_losses) / len(test_losses))
 
         # import matplotlib.pyplot as plt
@@ -354,15 +359,39 @@ class EncoderDecoderAttentionLSTM(BaseModel):
             predictions = self.model.forward(X_batch, decoder_input)
             pred_list.append(predictions.to('cpu').detach().numpy())
         # predictions = self.model.forward(X_pred_tensors, X_pred_tensors[:, -1:, -1:])
-        pred_np = np.concatenate(pred_list)
+        sequences = np.concatenate(pred_list)
         # pred_np = predictions.to('cpu').detach().numpy()
-        pred_steps = pred_np[::self.target_length]
-        pred_shaped = np.reshape(pred_steps, pred_steps.shape[0] * pred_steps.shape[1]).reshape(-1, 1)
-        # rescale using training scaler and reshape into one continuous sequence
-        pred_sequence = self.target_scaler.inverse_transform(pred_shaped).reshape(-1)
+
+        total_length = len(sequences) + self.target_length - 1  # Total number of positions covered
+        sum_values = np.zeros(total_length)
+        count_values = np.zeros(total_length)
+        min_values = np.full(total_length, np.inf)  # initialize with infinity
+        max_values = np.full(total_length, -np.inf)  # initialize with negative infinity
+
+        for i, seq in enumerate(sequences):
+            for j in range(24):
+                index = i + j  # global index in the expanded array
+                value = seq[j]
+
+                sum_values[index] += value
+                count_values[index] += 1
+                min_values[index] = min(min_values[index], value)
+                max_values[index] = max(max_values[index], value)
+
+        mean_values = sum_values / count_values  # Compute the mean
+
+        # pred_steps = pred_np[::self.target_length]
+        # pred_shaped = np.reshape(pred_steps, pred_steps.shape[0] * pred_steps.shape[1]).reshape(-1, 1)
+        # # rescale using training scaler and reshape into one continuous sequence
+        # pred_sequence = self.target_scaler.inverse_transform(pred_shaped).reshape(-1)
+        pred_sequence = self.target_scaler.inverse_transform(mean_values.reshape(-1, 1)).reshape(-1)
+        mins = self.target_scaler.inverse_transform(min_values.reshape(-1, 1)).reshape(-1)
+        maxs = self.target_scaler.inverse_transform(max_values.reshape(-1, 1)).reshape(-1)
 
         df_result = pd.DataFrame({'timestamp': timestamps[:pred_sequence.shape[0]],
-                                  'day_ahead_price_predicted': pred_sequence})
+                                  'day_ahead_price_predicted': pred_sequence,
+                                  'pred_min': mins,
+                                  'pred_max': maxs})
         return df_result
 
     def __prepare_feature_dataset(self, X):
