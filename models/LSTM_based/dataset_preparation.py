@@ -181,8 +181,8 @@ if __name__ == '__main__':
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data')
     datasets_load_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-        '\\models\\LSTM_based', '\\merged_data')
-    df = pd.read_csv(datasets_load_path + '\\allData.csv', index_col=0)
+        '\\models\\LSTM_based', '\\temp')
+    df = pd.read_csv(datasets_load_path + '\\foreCastAllData.csv', index_col=0)
     # j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
-    run_preprocessing(df)
+    # run_preprocessing(df)
     pass

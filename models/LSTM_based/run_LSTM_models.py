@@ -7,6 +7,7 @@ import optuna
 from plotly.io import show
 import torch
 import joblib
+import matplotlib.pyplot as plt
 
 from models.LSTM_based.dataset_preparation import train_test_val_split, sin_transformer, cos_transformer
 from models.LSTM_based.encoder_decoder_LSTM import EncoderDecoderAttentionLSTM
@@ -128,6 +129,28 @@ class SaveStudyCallback:
         joblib.dump(study, f"optuna_trials\\study_{i}.pkl")
 
 
+def replace_low_values(arr, threshold=-100, repeat=1):
+    for n in range(repeat):
+        arr = arr.copy()  # Avoid modifying the original array
+
+        for i in range(1, len(arr) - 1):  # Avoid first and last elements
+            if arr[i] < threshold:
+                arr[i] = (arr[i - 1] + arr[i + 1] + arr[i]) / 3  # Mean of neighbors
+
+    return arr
+
+
+def replace_high_values(arr, threshold=500, repeat=1):
+    for n in range(repeat):
+        arr = arr.copy()  # Avoid modifying the original array
+
+        for i in range(1, len(arr) - 1):  # Avoid first and last elements
+            if arr[i] > threshold:
+                arr[i] = (arr[i - 1] + arr[i + 1] + arr[i]) / 3  # Mean of neighbors
+
+    return arr
+
+
 def run_encoder_decoder_attention_LSTM():
     # load dataset
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
@@ -195,6 +218,28 @@ def run_encoder_decoder_attention_LSTM():
     # split into train, test, val
     X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(df, target_column=target)
 
+    # Plotting the value distribution
+    # r = replace_low_values(arr=y_train[target].values, threshold=-100, repeat=10)
+    # r = replace_high_values(arr=r, threshold=400, repeat=10)
+    # plt.hist(r, bins=100, edgecolor='black')
+    # plt.axvline(x=np.median(r), color='r', linestyle='--', label='Vertical Line')
+    # plt.axvline(x=r.min(), color='r', linestyle='--', label='Vertical Line')
+    # plt.axvline(x=r.max(), color='r', linestyle='--', label='Vertical Line')
+    # plt.title('Value Distribution of NumPy Array')
+    # plt.xlabel('Value')
+    # plt.ylabel('Frequency')
+    # plt.grid(True)
+    # plt.show(block=True)
+    #
+    # m = y_train[target].median()
+    # upper_limit = 400
+    # lower_limit = -100
+    #
+    # y_train[target] = y_train[target].values - m
+    # r = y_train[target].apply(lambda x: np.log(x) if x > 0 else (-1 * np.log(abs(x)) if x < 0 else 0)).values
+
+    # y_train[target] = y_train[target].apply(lambda x: min(max(x, -100), 600)).values
+    # y_train[target] = y_train[target].apply(lambda x: max(x, -100)).values
     # df_pred_test = pd.read_csv('results_prediction.csv')
     # y_compare = y_test.copy(deep=True)[:df_pred_test.shape[0]]
     # y_compare['pred'] = df_pred_test['day_ahead_price_predicted'].values
@@ -204,19 +249,19 @@ def run_encoder_decoder_attention_LSTM():
 
     # define model
     model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
-                                        hidden_size=256, num_layers=6, use_attention=True)
+                                        hidden_size=64, num_layers=3, use_attention=False)
     # 112, 6
     # train model
     training_history = model.train(X_train=X_train, y_train=y_train,
                                    X_val=X_val, y_val=y_val,
-                                   X_test=X_test, y_test=y_test,
+                                   X_test=X_val, y_test=y_val,
                                    n_epochs=1000, batch_size=2048, learning_rate=0.001)
 
     # store the model
     # model.custom_save(model.model, filename='BiEncDecAttLSTM.pth')
 
     # load the model
-    # m = model.custom_load(filename='BiEncDecAttLSTM.pth')
+    # m = model.custom_load(filename='BiEncDecAttLSTM_small_autoreg.pth')
 
     # create feature and target scalers in training data
     model.create_scalers(X_train, y_train)
@@ -227,7 +272,7 @@ def run_encoder_decoder_attention_LSTM():
     prediction_val_result = model.predict(X=X_val, exp_dir=None).set_index('timestamp')
 
     BenchMaker = BenchmarkMaker(export_dir='result')
-    BenchMaker.load_dataframes(predictions={'EncDecLSTM': prediction_test_result}, prices=y_test)
+    BenchMaker.load_dataframes(predictions={'EncDecLSTM': prediction_val_result[['day_ahead_price_predicted']]}, prices=y_val)
     BenchMaker.calc_errors()
 
     BenchMaker.plot_rmse_per_hour()
@@ -323,24 +368,42 @@ def run_multivariate_LSTM():
 
     model1.create_scalers(X_train, y_train)
     model1.custom_load('MultivarLSTM.pth')
-    prediction1 = model1.run_prediction(X_test).set_index('timestamp')
+    prediction1 = model1.run_prediction(X_val).set_index('timestamp')
 
-    model2 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
-                                         hidden_size=256, num_layers=6, use_attention=True)
-    model2.custom_load(filename='BiEncDecAttLSTM.pth')
-    model2.create_scalers(X_train, y_train)
-    prediction2 = model2.run_prediction(X_test).set_index('timestamp')
-
-    model3 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
-                                         hidden_size=256, num_layers=6, use_attention=True)
-    model3.custom_load(filename='BiEncDecLSTM.pth')
+    model3 = EncoderDecoderAttentionLSTM(target_length=48, features=features2, target=target,
+                                         hidden_size=64, num_layers=3, use_attention=True)
+    model3.custom_load(filename='BiEncDecAttLSTM_small_autoreg_val.pth')
     model3.create_scalers(X_train, y_train)
-    prediction3 = model3.run_prediction(X_test).set_index('timestamp')
+
+    X_for_pred = X_val[pd.Timestamp('2024-05-30 00:00:00'):pd.Timestamp('2024-05-30 23:00:00')]
+    y_for_pred = y_val[pd.Timestamp('2024-05-30 00:00:00'):pd.Timestamp('2024-05-31 23:00:00')]
+    prediction3 = model3.run_prediction(X_for_pred).set_index('timestamp')
+
+    model4 = EncoderDecoderAttentionLSTM(target_length=24, features=features2, target=target,
+                                         hidden_size=64, num_layers=3, use_attention=False)
+    model4.custom_load(filename='BiEncDecLSTM_autoreg_val.pth')
+    model4.create_scalers(X_train, y_train)
+    prediction4 = model4.run_prediction(X_val).set_index('timestamp')
+
+    target_pred = 'day_ahead_price_predicted'
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(prediction4.index.values, prediction4[target_pred].values, label="Mean", color="blue", linewidth=2)
+    plt.fill_between(prediction4.index.values, prediction4['pred_min'].values, prediction4['pred_max'].values,
+                     color="lightblue", alpha=0.5, label="Min-Max Range")
+    plt.xlabel("Timestamp")
+    plt.ylabel("Day Ahead Price in €")
+    plt.title("Mean, Min, and Max of Predicted Day Ahead Prices")
+    plt.legend()
+    plt.grid(True)
+    plt.show(block=True)
 
     BenchMaker = BenchmarkMaker(export_dir='result')
-    BenchMaker.load_dataframes(predictions={'MultivarLSTM': prediction1,
-                                            'EncDecAttLSTM': prediction2,
-                                            'EncDecLSTM': prediction3}, prices=y_test)
+    BenchMaker.load_dataframes(predictions={# 'MultivarLSTM': prediction1[[target_pred]],
+                                            'EncDecAttLSTM_val': prediction3[[target_pred]],
+                                            # 'EncDecLSTM': prediction4[[target_pred]]
+                                            },
+                               prices=y_for_pred) # [pd.Timestamp('2024-02-14 00:00:00'):pd.Timestamp('2024-02-23 23:00:00')])
     BenchMaker.calc_errors()
 
     BenchMaker.plot_rmse_per_hour()

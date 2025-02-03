@@ -344,8 +344,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         self.model.eval()
         pred_length = X.shape[0]
         X = X.reset_index(names='timestamp')
-        timestamps = X['timestamp']
+        timestamps_x = X['timestamp']
         X = X.drop(['timestamp'], axis=1)
+        start_timestamp = timestamps_x[0]
 
         # scale features using the training scaler
         X = self.feature_scaler.transform(X[self.features])
@@ -369,7 +370,7 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         max_values = np.full(total_length, -np.inf)  # initialize with negative infinity
 
         for i, seq in enumerate(sequences):
-            for j in range(24):
+            for j in range(self.target_length):
                 index = i + j  # global index in the expanded array
                 value = seq[j]
 
@@ -379,6 +380,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
                 max_values[index] = max(max_values[index], value)
 
         mean_values = sum_values / count_values  # Compute the mean
+
+        end_timestamp = start_timestamp + pd.Timedelta(hours=total_length - 1)
+        timestamps = pd.date_range(start_timestamp, end_timestamp, freq='1H')
 
         # pred_steps = pred_np[::self.target_length]
         # pred_shaped = np.reshape(pred_steps, pred_steps.shape[0] * pred_steps.shape[1]).reshape(-1, 1)
