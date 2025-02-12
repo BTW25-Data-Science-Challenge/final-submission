@@ -37,7 +37,9 @@ try:
     # fix CO₂
     body = body.replace('₂','$_{2}$')
 
-    # fix figure in table positioning
+    # fix figure in table col size
+    body = body.replace('al{0.5769}}\n  >{\\raggedright\\arraybackslash}p{(\\linewidth - 2\\tabcolsep) * \\real{0.4231',
+    'al{0.8}}\n  >{\\raggedright\\arraybackslash}p{(\\linewidth - 2\\tabcolsep) * \\real{0.2')
     #body = body.replace('\\pandocbounded{\\includegraphics[keepaspectratio]{src/attention_graphic.png}}',\
     #                    '\\raisebox{-0.8\\height}{\\includegraphics[keepaspectratio]{src/attention_graphic.png}}')
 
