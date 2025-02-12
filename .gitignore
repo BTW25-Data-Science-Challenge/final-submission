@@ -1,6 +1,7 @@
 .idea/*
 *.csv
 *.parquet
+output.tex
 
 !CoalOld.csv
 !naturalGasOld.csv
