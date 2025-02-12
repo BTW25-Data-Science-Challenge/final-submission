@@ -47,6 +47,15 @@ try:
     # add TOC
     body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents')
 
+    # fix pandoc overleaf issue
+    body = body.replace('\\pandocbounded', '')
+
+    # make section links work
+    body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
+    body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
+    body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+
+
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
 
