@@ -216,6 +216,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
         self.target_scaler = MinMaxScaler()
         self.feature_scaler = StandardScaler()  #
 
+        start = 22560
+        end = 37248
+
         # select features and target columns
         if len(self.features) > 0:
             # use only selected features (of self.features not defined: use all columns as features)
@@ -240,7 +243,9 @@ class EncoderDecoderAttentionLSTM(BaseModel):
 
         # convert dataset to tensors suitable for training the model
         X_train_tensors = self.__prepare_feature_dataset(X_train)
+        X_train_tensors = torch.cat((X_train_tensors[:start], X_train_tensors[end:]))
         y_train_tensors = self.__prepare_target_dataset(y_train)
+        y_train_tensors = torch.cat((y_train_tensors[:start], y_train_tensors[end:]))
         X_test_tensors = self.__prepare_feature_dataset(X_test)
         y_test_tensors = self.__prepare_target_dataset(y_test)
         X_val_tensors = self.__prepare_feature_dataset(X_val)

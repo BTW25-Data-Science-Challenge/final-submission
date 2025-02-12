@@ -82,17 +82,17 @@ def has_long_nan_streak(series, threshold):
 
 def run_preprocessing(df, nan_streak_threshold, start_ts, end_ts):
     time_n = time.time()
-    df = df.drop(['date', 'End_Date'], axis=1)
-    df['is_holiday'] = df['is_holiday'].values.astype(int)
-    df['is_weekend'] = df['is_weekend'].values.astype(int)
+    # df = df.drop(['date', 'End_Date'], axis=1)
+    # df['is_holiday'] = df['is_holiday'].values.astype(int)
+    # df['is_weekend'] = df['is_weekend'].values.astype(int)
 
     unique_df = df.loc[:, ~df.T.duplicated()]
 
     # unique_df['Date'] = df.index.values
-    unique_df['Date'] = pd.DatetimeIndex(unique_df['Date'].values)
+    unique_df['Date'] = pd.DatetimeIndex(unique_df.index.values)
     unique_df = unique_df.set_index('Date')
-    start_date = pd.Timestamp('2015-01-05 00:00:00')
-    end_date = pd.Timestamp('2025-02-04 23:00:00')
+    start_date = pd.Timestamp('2018-10-01 00:00:00')
+    end_date = pd.Timestamp('2025-02-11 23:00:00')
     unique_df = unique_df[start_date:end_date]
 
     unique_df = unique_df.reset_index()
@@ -104,9 +104,9 @@ def run_preprocessing(df, nan_streak_threshold, start_ts, end_ts):
     columns_to_keep = ~unique_df.apply(has_long_nan_streak, threshold=threshold, axis=0)
     no_nan_streaks_df = unique_df.loc[:, columns_to_keep]
 
-    # features = list(no_nan_streaks_df.columns)
-    # new_df = no_nan_streaks_df.copy(deep=True)
-    new_df = unique_df.copy(deep=True).drop(['Network security of the TSOs [€] Calculated resolutions'], axis=1)
+    features = list(no_nan_streaks_df.columns)
+    new_df = no_nan_streaks_df.copy(deep=True)
+    # new_df = unique_df.copy(deep=True).drop(['Network security of the TSOs [€] Calculated resolutions'], axis=1)
     features = list(new_df.columns)
     for i, c in enumerate(features):
         if new_df[c].isna().sum() > 0:
@@ -118,8 +118,8 @@ def run_preprocessing(df, nan_streak_threshold, start_ts, end_ts):
     new_df['hour'] = new_df['Date'].dt.hour
 
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-        '\\models\\LSTM_based', '\\data')
-    new_df.to_csv(datasets_path + '\\allData_cleaned_2.csv')
+        '\\models\\LSTM_based', '\\data\\lstm_small_subset')
+    new_df.to_csv(datasets_path + '\\small_subset_lstm_cleaned.csv')
 
     print(f'preprocessing done in: {int((time.time() - time_n)/60)}')
 
@@ -180,12 +180,53 @@ def plot_filled_values(df, target_column, missing_mask):
     plt.show(block=True)
 
 
+def combine_df(dir):
+    dfs = []
+    for name in os.listdir(dir):
+        filename = dir + f'\\{name}'
+        dfs.append(pd.read_csv(filename).set_index('timestamp').drop(['Unnamed: 0'], axis=1))
+    result_df = dfs[0]
+    for df in dfs[1:]:
+        result_df = result_df.join(df, how='outer')
+    result_df = result_df.dropna(subset=['hour'])
+    return result_df
+
+
+def renew_features(df):
+    df['renew_total'] = df['Solar'].values + df['Wind Offshore'].values + df['Wind Onshore'].values
+
+    df['delta_renew_load'] = df['Forecasted Load'].values - df['renew_total'].values
+
+    return df
+
+
+def add_time_features(df):
+    prev_day_prices = df[:-24]['day_ahead_prices'].values
+    df = df[24:]
+    df['prev_range_prices'] = prev_day_prices
+    df['hour_sin'] = sin_transformer(24).fit_transform(df['hour'].values)
+    df['hour_cos'] = cos_transformer(24).fit_transform(df["hour"].values)
+
+    df['day_of_week_sin'] = sin_transformer(7).fit_transform(df['day_of_week'].values)
+    df['day_of_week_cos'] = cos_transformer(7).fit_transform(df["day_of_week"].values)
+
+    df['month_sin'] = sin_transformer(12).fit_transform(df['month'].values)
+    df['month_cos'] = cos_transformer(12).fit_transform(df["month"].values)
+
+    return df
+
+
 if __name__ == '__main__':
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-        '\\models\\LSTM_based', '\\temp')
+        '\\models\\LSTM_based', '\\data\\lstm_small_subset')
     datasets_load_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data')
-    df = pd.read_csv(datasets_path + '\\foreCastAllData.csv', index_col=0)
+    # full_df = combine_df(dir=datasets_path + '\\sources')
+    # full_df.to_csv(datasets_path + '\\small_subset_lstm.csv')
+
+    df = pd.read_csv(datasets_path + '\\small_subset_lstm_cleaned.csv', index_col=0)
+    df_new = add_time_features(df)
+    df_new = renew_features(df_new).set_index('Date')
     # j = train_test_val_split(df, target_column='day_ahead_prices_EURO_x')
     # run_preprocessing(df, nan_streak_threshold=168, start_ts=None, end_ts=None)
     pass
