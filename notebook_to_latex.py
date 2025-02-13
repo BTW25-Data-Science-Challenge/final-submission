@@ -3,23 +3,23 @@ from nbconvert import LatexExporter
 notebook_path = 'report.ipynb'
 # Exported from the mailing list, please change name appearance if wanted
 authors = [
-            'Bachmann, Hannes',
-            'Diehl, Emmanuel',
-            'Gonsior, Georg',
-            'Gonzalez Villamizar, Daniel Ricardo',
-            'Hanusch, Julius',
-            'Hüfner, Clara',
-            'Maier-Knop, Malte Alexander',
-            'Richter, Jordan Wenzel',
-            'Seidemann, Ansgar',
-            'Tschöpe, Moritz',
-            'Wahler, Felix',
+            'Hannes Bachmann',
+            'Emmanuel Diehl',
+            'Georg Gonsior',
+            'Daniel Ricardo Gonzalez Villamizar',
+            'Julius Hanusch',
+            'Clara Hüfner',
+            'Malte Alexander Maier-Knop',
+            'Jordan Wenzel Richter',
+            'Ansgar Seidemann',
+            'Moritz Tschöpe',
+            'Felix Wahler',
             ]
 
 nl = '\\\\'
 authorstring = ''
 authorstring = ('\\author{'+nl+nl.join(authors)+
-                nl * 3 + nl.join(['\\textit{Supervision by}', 'Dipl.-Ing. Pöhlmann, Jimmy', 'Dr.-Ing. Hartmann, Claudio', 'Prof. Dr.-Ing. Lehner, Wolfgang']) + nl * 3 +'}')
+                nl * 3 + nl.join(['\\textit{Supervision by}', 'Jimmy Pöhlmann', 'Claudio Hartmann', 'Wolfgang Lehner']) + nl * 3 +'}')
 
 try:
     latex_exporter = LatexExporter()
