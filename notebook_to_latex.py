@@ -2,12 +2,24 @@ from nbconvert import LatexExporter
 
 notebook_path = 'report.ipynb'
 # Exported from the mailing list, please change name appearance if wanted
-authors = ['Hüfner, Clara','Wahler, Felix','Tschöpe, Moritz','Richter, Jordan Wenzel','Maier-Knop, Malte Alexander',
-           'Gonzalez Villamizar, Daniel Ricardo','Bachmann, Hannes',
-           'Hanusch, Julius','Diehl, Emmanuel','Seidemann, Ansgar','Gonsior, Georg',
-           'Supervision by Pöhlmann, Jimmy']
+authors = [
+            'Bachmann, Hannes',
+            'Diehl, Emmanuel',
+            'Gonsior, Georg',
+            'Gonzalez Villamizar, Daniel Ricardo',
+            'Hanusch, Julius',
+            'Hüfner, Clara',
+            'Maier-Knop, Malte Alexander',
+            'Richter, Jordan Wenzel',
+            'Seidemann, Ansgar',
+            'Tschöpe, Moritz',
+            'Wahler, Felix',
+            ]
+
+nl = '\\\\'
 authorstring = ''
-authorstring = '\\author{\\\\'+'\\and\\\\'.join(authors)+'}'
+authorstring = ('\\author{'+nl+nl.join(authors)+
+                nl * 3 + nl.join(['\\textit{Supervision by}', 'Dipl.-Ing. Pöhlmann, Jimmy', 'Dr.-Ing. Hartmann, Claudio', 'Prof. Dr.-Ing. Lehner, Wolfgang']) + nl * 3 +'}')
 
 try:
     latex_exporter = LatexExporter()
@@ -57,6 +69,8 @@ try:
     body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
     body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
 
+    # shorten TOC
+    body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection*{Acknowledgement}')
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
