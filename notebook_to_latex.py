@@ -59,7 +59,7 @@ try:
     body = body.replace('\\begin{document}', authorstring + '\n\\begin{document}')
 
     # add TOC
-    body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents')
+    body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents\n\\thispagestyle{empty}\n\\newpage')
 
     # fix pandoc overleaf issue
     body = body.replace('\\pandocbounded', '')
@@ -70,7 +70,7 @@ try:
     body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
 
     # shorten TOC
-    body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection*{Acknowledgement}')
+    body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection{Acknowledgement}')
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
