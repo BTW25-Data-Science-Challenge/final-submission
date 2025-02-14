@@ -9,7 +9,7 @@ authors = [
             'Daniel Ricardo Gonzalez Villamizar',
             'Julius Hanusch',
             'Clara Hüfner',
-            'Malte Alexander Maier-Knop',
+            'Malte Maier-Knop',
             'Jordan Wenzel Richter',
             'Ansgar Seidemann',
             'Moritz Tschöpe',
