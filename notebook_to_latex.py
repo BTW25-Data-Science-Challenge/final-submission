@@ -17,7 +17,6 @@ authors = [
             ]
 
 nl = '\\\\'
-authorstring = ''
 authorstring = ('\\author{'+nl+nl.join(authors)+
                 nl * 3 + nl.join(['\\textit{Supervision by}', 'Jimmy Pöhlmann', 'Claudio Hartmann', 'Wolfgang Lehner']) + nl * 3 +'}')
 
