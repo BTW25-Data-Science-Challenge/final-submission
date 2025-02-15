@@ -57,6 +57,9 @@ try:
     # add authors
     body = body.replace('\\begin{document}', authorstring + '\n\\begin{document}')
 
+    # euro sign fix
+    body = body.replace('€', '\\euro')
+
     # add TOC
     body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents\n\\thispagestyle{empty}\n\\newpage')
 
