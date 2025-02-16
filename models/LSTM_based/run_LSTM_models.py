@@ -550,6 +550,7 @@ def lstm_prediction():
 
 if __name__ == '__main__':
     # run_encoder_decoder_attention_LSTM()
+    # ! set path your path to the 'temp' dir
     report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
 
     lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_test_results_48h.csv',
@@ -564,20 +565,23 @@ if __name__ == '__main__':
                                               index_col=0)
     autogluon_res = pd.read_csv(report_temp_dir + '\\Autogluon_high_quality_less_without_known_covariables.csv',
                                 index_col=0)[['predicted']]
+    tft_res = pd.read_csv(report_temp_dir + '\\tft_final_benchmark_results.csv', index_col=0)
+    previous_day_baseline = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')[
+        ['Date', 'prev_range_prices']].set_index('Date')
+    previous_day_baseline.index.names = ['timestamp']
 
     actual_day_ahead_prices = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')[
         ['Date', 'day_ahead_prices']].set_index('Date')
     actual_day_ahead_prices.index.names = ['timestamp']
 
     BenchMaker = BenchmarkMaker(export_dir='results_from_report')
-    BenchMaker.load_dataframes(predictions={'Chronos pretrain tiny': chronos_tiny_pretrained_res,
-                                            'Chronos pretrain large': chronos_large_pretrained_res,
-                                            'Chronos finetuned tiny': chronos_tiny_finetuned_res,
-                                            'Chronos finetuned large': chronos_large_finetuned_res,
+    BenchMaker.load_dataframes(predictions={'Baseline t-24h': previous_day_baseline,
+                                            'TFT': tft_res,
                                             'EncDecAtt LSTM': lstm_res,
-                                            'AutoGluon': autogluon_res}, prices=actual_day_ahead_prices)
+                                            'AutoGluon': autogluon_res,
+                                            'Chronos Finetuned Large': chronos_large_finetuned_res},
+                               prices=actual_day_ahead_prices)
     BenchMaker.calc_errors()
-    print(BenchMaker.data.head())
 
     BenchMaker.plot_compare_mae()
     BenchMaker.plot_compare_rmse()
