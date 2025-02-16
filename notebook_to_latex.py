@@ -101,13 +101,13 @@ try:
     body = body.replace('\\end{Verbatim}','\\end{Verbatim}\n\\end{small}')
 
     # create links
-    body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
-    body = body.replace('{[}SMARD user guide 15.12.2024{]}', '\\hyperref[bibliography]{[SMARD user guide 15.12.2024]}.', 1)
-    body = body.replace('{[}European Commission, EU ETS 16.12.2024{]}', '\\hyperref[bibliography]{[European Commission, EU ETS 16.12.2024]}.', 1)
-    body = body.replace('{[}Investing, Carbon Emissions Futures\n16.12.2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures 16.12.2024]}.', 1)
-    body = body.replace('{[}Smard, Negative\nwholesale prices, 13.02.2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 13.02.2025]}.', 1)
-    body = body.replace('{[}Finanztools,\nInflationsraten Deutschland 12.02.2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland 12.02.2025]}.', 1)
-    body = body.replace('{[}Smard, Großhandelspreise\n15.12.2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise 15.12.2024]}.', 1)
+    body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis,\n2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis, 2024]}.', 1)
+    body = body.replace('{[}SMARD user guide, 2024{]}', '\\hyperref[bibliography]{[SMARD user guide, 2024]}.', 1)
+    body = body.replace('{[}European Commission, EU ETS, 2024{]}', '\\hyperref[bibliography]{[European Commission, EU ETS, 2024]}.', 1)
+    body = body.replace('{[}Investing, Carbon Emissions Futures,\n2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures, 2024]}.', 1)
+    body = body.replace('{[}Smard, Negative\nwholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}.', 1)
+    body = body.replace('{[}Finanztools,\nInflationsraten Deutschland, 2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland, 2025]}.', 1)
+    body = body.replace('{[}Smard, Großhandelspreise,\n2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise, 2024]}.', 1)
     # check if the correct amount of links appear before the bibliography
     if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 7): print("link creation error")
 
