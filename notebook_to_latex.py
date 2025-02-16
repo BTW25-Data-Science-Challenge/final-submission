@@ -82,7 +82,7 @@ try:
     body = body.replace('→ Appendix I', '\\nameref{appendix-i-smard-dataset-columns}')
 
     # create appendix
-    body = body.replace('\\section{Appendix I', '\\appendix\n\\section{Appendix I')
+    body = body.replace('\\section{Appendix I', '\\newpage\\appendix\n\\section{Appendix I')
 
     # shorten TOC
     body = body.replace('\\subsection{Acknowledgement}','\\vspace{5em}\\subsection{Acknowledgement}')
@@ -118,6 +118,11 @@ try:
 
     # fix figure captions
     body = body.replace('\\DeclareCaptionFormat{nocaption}{}\n    \\captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}','')
+
+    # fix svg figure
+    body = body.replace('{\\includesvg[keepaspectratio]{src/AG-Ensemble.svg}}',
+                        '\\begin{figure}\n\\centering\n{\\includegraphics[keepaspectratio]{src/AG-Ensemble2.pdf}}\n\\caption{AG-Ensemble}\n\\end{figure}\n')
+
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
