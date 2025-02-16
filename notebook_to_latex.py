@@ -92,6 +92,11 @@ try:
     body = body.replace('https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf',
                         '\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/}\\hspace{0em}\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}smard-user-guide-09-2021-data.pdf}')
 
+    # smaller tables
+    body = body.replace('\\begin{longtable}[]{@{}','{\\fontsize{8pt}{10pt}\\selectfont\\begin{longtable}[]{@{}')
+    body = body.replace('\\end{longtable}','\\end{longtable}}')
+
+
     # create links
     body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
     body = body.replace('{[}SMARD user guide 15.12.2024{]}', '\\hyperref[bibliography]{[SMARD user guide 15.12.2024]}.', 1)
