@@ -65,6 +65,7 @@ try:
 
     # fix pandoc overleaf issue
     body = body.replace('\\pandocbounded', '')
+    body = body.replace('    \\makeatletter\n    \\newsavebox\\pandoc@box\n    \\newcommand*[1]{%\n      \\sbox\\pandoc@box{#1}%\n      % scaling factors for width and height\n      \\Gscale@div\\@tempa\\textheight{\\dimexpr\\ht\\pandoc@box+\\dp\\pandoc@box\\relax}%\n      \\Gscale@div\\@tempb\\linewidth{\\wd\\pandoc@box}%\n      % select the smaller of both\n      \\ifdim\\@tempb\\p@<\\@tempa\\p@\n        \\let\\@tempa\\@tempb\n      \\fi\n      % scaling accordingly (\\@tempa < 1)\n      \\ifdim\\@tempa\\p@<\\p@\n        \\scalebox{\\@tempa}{\\usebox\\pandoc@box}%\n      % scaling not needed, use as it is\n      \\else\n        \\usebox{\\pandoc@box}%\n      \\fi\n    }\n    \\makeatother', '')
 
     # make section links work
     body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
@@ -82,7 +83,6 @@ try:
 
     # set A4
     body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
-
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
