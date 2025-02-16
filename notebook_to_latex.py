@@ -80,7 +80,7 @@ try:
     body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
 
     # shorten TOC
-    body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection{Acknowledgement}')
+    body = body.replace('\\subsection{Acknowledgement}','\\vspace{5em}\\subsection{Acknowledgement}')
 
     # set A4
     body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
@@ -110,6 +110,9 @@ try:
     body = body.replace('{[}Smard, Großhandelspreise\n15.12.2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise 15.12.2024]}.', 1)
     # check if the correct amount of links appear before the bibliography
     if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 7): print("link creation error")
+
+    # fix figure captions
+    body = body.replace('\\DeclareCaptionFormat{nocaption}{}\n    \\captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}','')
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
