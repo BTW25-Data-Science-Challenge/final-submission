@@ -70,9 +70,19 @@ try:
     body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
     body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
     body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
+    body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
+    body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-story-telling}~\\nameref{visualization-story-telling}')
+    body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
+    body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
 
     # shorten TOC
     body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection{Acknowledgement}')
+
+    # set A4
+    body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
+
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)
