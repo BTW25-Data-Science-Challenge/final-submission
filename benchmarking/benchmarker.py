@@ -38,6 +38,7 @@ class BenchmarkMaker:
             self.model_names.append(str(k))
         prices = prices.set_axis(['day_ahead_prices'], axis='columns')
         self.align_dataframes(list(predictions.values()) + [prices])
+        self.data.index = pd.date_range(self.data.index[0], self.data.index[-1], freq='1H')
 
     def align_dataframes(self, dataframes):
         """Align multiple DataFrames with timestamp indices by merging them on their index.
@@ -145,13 +146,14 @@ class BenchmarkMaker:
             plt.savefig(self.export_dir + '\\' + 'daily_mae.png')
         plt.show(block=True)
 
-    def plot_compare_predictions_hourly(self):
-        gt_values = self.data['day_ahead_prices'].values
-        timestamps = self.data.index.values
+    def plot_compare_predictions_hourly(self, start_date=None, end_date=None):
+        plot_data = self.data[start_date:end_date].copy(deep=True)
 
+        gt_values = plot_data['day_ahead_prices'].values
+        timestamps = plot_data.index.values
 
         for model in self.model_names:
-            pred_values = self.data[model].values
+            pred_values = plot_data[model].values
             plt.plot(timestamps, pred_values, label=model)
 
         plt.plot(timestamps, gt_values, label='Actual Values')
@@ -216,6 +218,7 @@ class BenchmarkMaker:
         ax.set_xticks(x)
         ax.set_xticklabels(self.model_names)
         ax.set_ylim([0, max(mae_values) + 5])
+        plt.xticks(rotation=45)
         plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_mae.png')
@@ -249,6 +252,7 @@ class BenchmarkMaker:
         ax.set_xticks(x)
         ax.set_xticklabels(self.model_names)
         ax.set_ylim([0, max(rmse_values) + 5])
+        plt.xticks(rotation=45)
         plt.tight_layout()
         if self.export_dir is not None:
             plt.savefig(self.export_dir + '\\' + 'compare_rmse.png')

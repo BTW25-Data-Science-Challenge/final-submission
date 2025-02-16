@@ -17,7 +17,6 @@ authors = [
             ]
 
 nl = '\\\\'
-authorstring = ''
 authorstring = ('\\author{'+nl+nl.join(authors)+
                 nl * 3 + nl.join(['\\textit{Supervision by}', 'Jimmy Pöhlmann', 'Claudio Hartmann', 'Wolfgang Lehner']) + nl * 3 +'}')
 
@@ -28,7 +27,8 @@ try:
     # remove Utils
     startutils = body.index('\\subsection{Utils}\\label{utils}') + len('\\subsection{Utils}\\label{utils}')
     endutils = body.index('\\subsection{Gathering Domain')
-    body = body[:startutils] + '\\textit{code omitted - see notebook}' + body[endutils:]
+    utilsstring = '\\textit{code omitted - see notebook for the following contents:}\\begin{itemize}\\tightlist\n\\item installs and imports\n\\item base model structure\n\\item models implementation\n\\item benchmarking class\n\\item downloading data\n\\item loading data\n\\end{itemize}'
+    body = body[:startutils] + utilsstring + body[endutils:]
 
     # pretty table formatting
     body = body.replace('\\begin{longtable}[]{@{}', "\\rowcolors{2}{white}{gray!25}\n\\begin{longtable}[]{@{}")
@@ -58,19 +58,55 @@ try:
     # add authors
     body = body.replace('\\begin{document}', authorstring + '\n\\begin{document}')
 
+    # euro sign fix
+    body = body.replace('€', '\\euro{}')
+
     # add TOC
     body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents\n\\thispagestyle{empty}\n\\newpage')
 
     # fix pandoc overleaf issue
     body = body.replace('\\pandocbounded', '')
+    body = body.replace('    \\makeatletter\n    \\newsavebox\\pandoc@box\n    \\newcommand*[1]{%\n      \\sbox\\pandoc@box{#1}%\n      % scaling factors for width and height\n      \\Gscale@div\\@tempa\\textheight{\\dimexpr\\ht\\pandoc@box+\\dp\\pandoc@box\\relax}%\n      \\Gscale@div\\@tempb\\linewidth{\\wd\\pandoc@box}%\n      % select the smaller of both\n      \\ifdim\\@tempb\\p@<\\@tempa\\p@\n        \\let\\@tempa\\@tempb\n      \\fi\n      % scaling accordingly (\\@tempa < 1)\n      \\ifdim\\@tempa\\p@<\\p@\n        \\scalebox{\\@tempa}{\\usebox\\pandoc@box}%\n      % scaling not needed, use as it is\n      \\else\n        \\usebox{\\pandoc@box}%\n      \\fi\n    }\n    \\makeatother', '')
 
     # make section links work
     body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
     body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
     body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
+    body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
+    body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
+    body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
+    body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
 
     # shorten TOC
     body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection{Acknowledgement}')
+
+    # set A4
+    body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
+
+    # scale down figure
+    body = body.replace('{\\includegraphics[keepaspectratio]{src/compare_LSTM_models_on_val.png}}','{\\includegraphics[keepaspectratio, scale = 0.7]{src/compare_LSTM_models_on_val.png}}')
+
+    # fix another link
+    body = body.replace('https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf',
+                        '\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/}\\hspace{0em}\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}smard-user-guide-09-2021-data.pdf}')
+
+    # smaller tables
+    body = body.replace('\\begin{longtable}[]{@{}','{\\fontsize{8pt}{10pt}\\selectfont\\begin{longtable}[]{@{}')
+    body = body.replace('\\end{longtable}','\\end{longtable}}')
+
+
+    # create links
+    body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
+    body = body.replace('{[}SMARD user guide 15.12.2024{]}', '\\hyperref[bibliography]{[SMARD user guide 15.12.2024]}.', 1)
+    body = body.replace('{[}European Commission, EU ETS 16.12.2024{]}', '\\hyperref[bibliography]{[European Commission, EU ETS 16.12.2024]}.', 1)
+    body = body.replace('{[}Investing, Carbon Emissions Futures\n16.12.2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures 16.12.2024]}.', 1)
+    body = body.replace('{[}Smard, Negative\nwholesale prices, 13.02.2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 13.02.2025]}.', 1)
+    body = body.replace('{[}Finanztools,\nInflationsraten Deutschland 12.02.2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland 12.02.2025]}.', 1)
+    body = body.replace('{[}Smard, Großhandelspreise\n15.12.2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise 15.12.2024]}.', 1)
+    # check if the correct amount of links appear before the bibliography
+    if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 7): print("link creation error")
 
     with open('output.tex', 'w', encoding='utf-8') as f:
         f.write(body)

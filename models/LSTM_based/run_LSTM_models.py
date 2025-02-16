@@ -3,8 +3,8 @@ import numpy as np
 import os
 import inspect
 from sklearn.preprocessing import FunctionTransformer
-import optuna
-from plotly.io import show
+# import optuna
+# from plotly.io import show
 import torch
 import joblib
 import matplotlib.pyplot as plt
@@ -17,116 +17,116 @@ from benchmarking.benchmarker import BenchmarkMaker
 torch.manual_seed(0)
 
 
-def optimize_hyperparameters():
-    # load dataset
-    datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-        '\\models\\LSTM_based', '\\data')
-    df = pd.read_csv(datasets_path + '\\allData_cleaned.csv', index_col=0)
-    prev_day_prices = df[:-24]['day_ahead_prices_EURO'].values
-    df = df[24:]
-    df['prev_range_prices'] = prev_day_prices
-    df['hour_sin'] = sin_transformer(24).fit_transform(df['hour'].values)
-    df['hour_cos'] = cos_transformer(24).fit_transform(df["hour"].values)
-
-    df['day_of_week_sin'] = sin_transformer(7).fit_transform(df['weekday'].values)
-    df['day_of_week_cos'] = cos_transformer(7).fit_transform(df["weekday"].values)
-
-    df['month_sin'] = sin_transformer(12).fit_transform(df['month'].values)
-    df['month_cos'] = cos_transformer(12).fit_transform(df["month"].values)
-    # prepare dataset for LSTM
-    # features = ['month', 'hour', 'day_of_week']
-    # features = list(df.drop(['Date', 'day_ahead_prices_EURO_x'], axis=1).columns)
-    features = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
-                'E_crossborder_DK_2_actual_MWh', 'E_crossborder_SE_4_actual_MWh', 'E_crossborder_DK_1_actual_MWh',
-                'E_crossborder_FR_actual_MWh', 'E_crossborder_CH_actual_MWh', 'E_crossborder_NL_actual_MWh',
-                'E_crossborder_sum_actual_MWh', 'E_crossborder_CZ_actual_MWh', 'E_crossborder_PL_actual_MWh',
-                'Oil WTI',
-                'Natural Gas', 'Price_Calculated_EUR_MWh', 'actual_E_Total_Gridload_MWh',
-                'actual_E_Residual_Load_MWh',
-                'actual_E_Hydro_Pumped_Storage_MWh', 'forecast_E_Total_Gridload_MWh',
-                'forecast_actual_E_Residual_Load_MWh', 'actual_generation_E_Biomass_MWh',
-                'actual_generation_E_Hydropower_MWh', 'actual_generation_E_Windoffshore_MWh',
-                'actual_generation_E_Windonshore_MWh', 'actual_generation_E_Photovoltaics_MWh',
-                'actual_generation_E_OtherRenewable_MWh', 'actual_generation_E_Lignite_MWh',
-                'actual_generation_E_HardCoal_MWh', 'actual_generation_E_FossilGas_MWh',
-                'actual_generation_E_HydroPumpedStorage_MWh', 'actual_generation_E_OtherConventional_MWh',
-                'forecast_generation_E_Total_MWh', 'forecast_generation_E_PhotovoltaicsAndWind_MWh',
-                'forecast_generation_E_Windoffshore_MWh', 'forecast_generation_E_Windonshore_MWh',
-                'forecast_generation_E_Photovoltaics_MWh', 'forecast_generation_E_Original_MWh',
-                'E_NetherlandExport_corssBorderPhysical_MWh', 'E_NetherlandImport_corssBorderPhysical_MW',
-                'E_DenmarkExport_corssBorderPhysical_MWh', 'E_Denmark_Import_corssBorderPhysical_MWh',
-                'E_CzechrepublicExport_corssBorderPhysical_MWh', 'E_CzechrepublicImport_corssBorderPhysical_MWh',
-                'E_SwedenExport_corssBorderPhysical_MWh', 'E_SwedenImportv_corssBorderPhysical_MWh',
-                'E_AustriaExport_corssBorderPhysical_MWh', 'E_AustriaImport_corssBorderPhysical_MWh',
-                'E_FranceExport_corssBorderPhysical_MWh', 'E_FranceImport_corssBorderPhysical_MWh',
-                'E_PolandExport_corssBorderPhysical_MWh', 'E_PolandImport_corssBorderPhysical_MWh',
-                'E_NetherlandExport_MWh', 'E_NetherlandImport_MW', 'E_SwitzerlandExport_MWh',
-                'E_SwitzerlandImport_MWh',
-                'E_DenmarkExport_MWh', 'E_Denmark_Import_MWh', 'E_CzechrepublicExport_MWh',
-                'E_CzechrepublicImport_MWh',
-                'E_LuxembourgExport_MWh', 'E_LuxembourgImport_MWh', 'E_SwedenExport_MWh', 'E_SwedenImport_MWh',
-                'E_AustriaExport_MWh', 'E_AustriaImport_MWh', 'E_FranceExport_MWh', 'E_FranceImport_MWh',
-                'E_PolandExport_MWh', 'E_PolandImport_MWh', 'superbowl_bool', 'oktoberfest_bool', 'berlinale_bool',
-                'carnival_bool', 'carbon_price_EURO', 'wind_speed_ms_KoelnBonn_review',
-                'wind_direction_degree_KoelnBonn_review', 'precipitationTotal_mm_KoelnBonn_review',
-                'QN_9_KoelnBonn_review', 'T_temperature_C_KoelnBonn_review', 'humidity_Percent_KoelnBonn_review',
-                'stationPressure_hPa_KoelnBonn_review', 'surfacePressure_hPa_KoelnBonn_review',
-                'sunshine_min_Muenchen_review', 'wind_speed_ms_Muenchen_review',
-                'wind_direction_degree_Muenchen_review', 'precipitationTotal_mm_Muenchen_review',
-                'clouds_Muenchen_review', 'T_temperature_C_Muenchen_review', 'humidity_Percent_Muenchen_review',
-                'stationPressure_hPa_Muenchen_review', 'surfacePressure_hPa_Muenchen_review', 'Covid factor',
-                'month',
-                'weekday', 'week_of_year', 'is_weekend', 'is_holiday', 'hour', 'prev_range_prices',
-                'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos']
-    target = 'day_ahead_prices_EURO'
-
-    # split into train, test, val
-    X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(df, target_column=target)
-
-    def objective(trial):
-        # set hyperparameter search space
-        hidden_size = trial.suggest_int("hidden_size", 16, 256, step=16)
-        num_layers = trial.suggest_int("num_layers", 1, 6)
-
-        # define model
-        model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
-                                            hidden_size=hidden_size, num_layers=num_layers)
-
-        # train model
-        training_history = model.train(X_train=X_train, y_train=y_train,
-                                       X_val=X_val, y_val=y_val,
-                                       X_test=X_test, y_test=y_test,
-                                       n_epochs=500, batch_size=1024, learning_rate=0.001)
-        min_test_loss = training_history['test loss'].values.min()
-
-        return min_test_loss
-
-    save_study_cb = SaveStudyCallback()
-    study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=25, callbacks=[save_study_cb])
-
-    pruned_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
-    complete_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
-
-    print('Best Trial: ')
-    best_trial = study.best_trial
-    for k, v in best_trial.params.items():
-        print('     {}: {}'.format(k, v))
-
-    best_params = best_trial.params
-
-    fig = optuna.visualization.plot_parallel_coordinate(study, params=["learning_rate", "batch_size"])
-    show(fig)
-    return best_params
-
-
-class SaveStudyCallback:
-    def __init__(self):
-        pass
-
-    def __call__(self, study: optuna.study.Study, trial: optuna.trial.FrozenTrial) -> None:
-        i = trial.number
-        joblib.dump(study, f"optuna_trials\\study_{i}.pkl")
+# def optimize_hyperparameters():
+#     # load dataset
+#     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
+#         '\\models\\LSTM_based', '\\data')
+#     df = pd.read_csv(datasets_path + '\\allData_cleaned.csv', index_col=0)
+#     prev_day_prices = df[:-24]['day_ahead_prices_EURO'].values
+#     df = df[24:]
+#     df['prev_range_prices'] = prev_day_prices
+#     df['hour_sin'] = sin_transformer(24).fit_transform(df['hour'].values)
+#     df['hour_cos'] = cos_transformer(24).fit_transform(df["hour"].values)
+#
+#     df['day_of_week_sin'] = sin_transformer(7).fit_transform(df['weekday'].values)
+#     df['day_of_week_cos'] = cos_transformer(7).fit_transform(df["weekday"].values)
+#
+#     df['month_sin'] = sin_transformer(12).fit_transform(df['month'].values)
+#     df['month_cos'] = cos_transformer(12).fit_transform(df["month"].values)
+#     # prepare dataset for LSTM
+#     # features = ['month', 'hour', 'day_of_week']
+#     # features = list(df.drop(['Date', 'day_ahead_prices_EURO_x'], axis=1).columns)
+#     features = ['Forecasted Load', 'E_solar_forecast_MWh', 'E_wind_forecast_MWh', 'E_wind_forecast_MWh.1',
+#                 'E_crossborder_DK_2_actual_MWh', 'E_crossborder_SE_4_actual_MWh', 'E_crossborder_DK_1_actual_MWh',
+#                 'E_crossborder_FR_actual_MWh', 'E_crossborder_CH_actual_MWh', 'E_crossborder_NL_actual_MWh',
+#                 'E_crossborder_sum_actual_MWh', 'E_crossborder_CZ_actual_MWh', 'E_crossborder_PL_actual_MWh',
+#                 'Oil WTI',
+#                 'Natural Gas', 'Price_Calculated_EUR_MWh', 'actual_E_Total_Gridload_MWh',
+#                 'actual_E_Residual_Load_MWh',
+#                 'actual_E_Hydro_Pumped_Storage_MWh', 'forecast_E_Total_Gridload_MWh',
+#                 'forecast_actual_E_Residual_Load_MWh', 'actual_generation_E_Biomass_MWh',
+#                 'actual_generation_E_Hydropower_MWh', 'actual_generation_E_Windoffshore_MWh',
+#                 'actual_generation_E_Windonshore_MWh', 'actual_generation_E_Photovoltaics_MWh',
+#                 'actual_generation_E_OtherRenewable_MWh', 'actual_generation_E_Lignite_MWh',
+#                 'actual_generation_E_HardCoal_MWh', 'actual_generation_E_FossilGas_MWh',
+#                 'actual_generation_E_HydroPumpedStorage_MWh', 'actual_generation_E_OtherConventional_MWh',
+#                 'forecast_generation_E_Total_MWh', 'forecast_generation_E_PhotovoltaicsAndWind_MWh',
+#                 'forecast_generation_E_Windoffshore_MWh', 'forecast_generation_E_Windonshore_MWh',
+#                 'forecast_generation_E_Photovoltaics_MWh', 'forecast_generation_E_Original_MWh',
+#                 'E_NetherlandExport_corssBorderPhysical_MWh', 'E_NetherlandImport_corssBorderPhysical_MW',
+#                 'E_DenmarkExport_corssBorderPhysical_MWh', 'E_Denmark_Import_corssBorderPhysical_MWh',
+#                 'E_CzechrepublicExport_corssBorderPhysical_MWh', 'E_CzechrepublicImport_corssBorderPhysical_MWh',
+#                 'E_SwedenExport_corssBorderPhysical_MWh', 'E_SwedenImportv_corssBorderPhysical_MWh',
+#                 'E_AustriaExport_corssBorderPhysical_MWh', 'E_AustriaImport_corssBorderPhysical_MWh',
+#                 'E_FranceExport_corssBorderPhysical_MWh', 'E_FranceImport_corssBorderPhysical_MWh',
+#                 'E_PolandExport_corssBorderPhysical_MWh', 'E_PolandImport_corssBorderPhysical_MWh',
+#                 'E_NetherlandExport_MWh', 'E_NetherlandImport_MW', 'E_SwitzerlandExport_MWh',
+#                 'E_SwitzerlandImport_MWh',
+#                 'E_DenmarkExport_MWh', 'E_Denmark_Import_MWh', 'E_CzechrepublicExport_MWh',
+#                 'E_CzechrepublicImport_MWh',
+#                 'E_LuxembourgExport_MWh', 'E_LuxembourgImport_MWh', 'E_SwedenExport_MWh', 'E_SwedenImport_MWh',
+#                 'E_AustriaExport_MWh', 'E_AustriaImport_MWh', 'E_FranceExport_MWh', 'E_FranceImport_MWh',
+#                 'E_PolandExport_MWh', 'E_PolandImport_MWh', 'superbowl_bool', 'oktoberfest_bool', 'berlinale_bool',
+#                 'carnival_bool', 'carbon_price_EURO', 'wind_speed_ms_KoelnBonn_review',
+#                 'wind_direction_degree_KoelnBonn_review', 'precipitationTotal_mm_KoelnBonn_review',
+#                 'QN_9_KoelnBonn_review', 'T_temperature_C_KoelnBonn_review', 'humidity_Percent_KoelnBonn_review',
+#                 'stationPressure_hPa_KoelnBonn_review', 'surfacePressure_hPa_KoelnBonn_review',
+#                 'sunshine_min_Muenchen_review', 'wind_speed_ms_Muenchen_review',
+#                 'wind_direction_degree_Muenchen_review', 'precipitationTotal_mm_Muenchen_review',
+#                 'clouds_Muenchen_review', 'T_temperature_C_Muenchen_review', 'humidity_Percent_Muenchen_review',
+#                 'stationPressure_hPa_Muenchen_review', 'surfacePressure_hPa_Muenchen_review', 'Covid factor',
+#                 'month',
+#                 'weekday', 'week_of_year', 'is_weekend', 'is_holiday', 'hour', 'prev_range_prices',
+#                 'hour_sin', 'hour_cos', 'month_sin', 'month_cos', 'day_of_week_sin', 'day_of_week_cos']
+#     target = 'day_ahead_prices_EURO'
+#
+#     # split into train, test, val
+#     X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(df, target_column=target)
+#
+#     def objective(trial):
+#         # set hyperparameter search space
+#         hidden_size = trial.suggest_int("hidden_size", 16, 256, step=16)
+#         num_layers = trial.suggest_int("num_layers", 1, 6)
+#
+#         # define model
+#         model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
+#                                             hidden_size=hidden_size, num_layers=num_layers)
+#
+#         # train model
+#         training_history = model.train(X_train=X_train, y_train=y_train,
+#                                        X_val=X_val, y_val=y_val,
+#                                        X_test=X_test, y_test=y_test,
+#                                        n_epochs=500, batch_size=1024, learning_rate=0.001)
+#         min_test_loss = training_history['test loss'].values.min()
+#
+#         return min_test_loss
+#
+#     save_study_cb = SaveStudyCallback()
+#     study = optuna.create_study(direction='minimize')
+#     study.optimize(objective, n_trials=25, callbacks=[save_study_cb])
+#
+#     pruned_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
+#     complete_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+#
+#     print('Best Trial: ')
+#     best_trial = study.best_trial
+#     for k, v in best_trial.params.items():
+#         print('     {}: {}'.format(k, v))
+#
+#     best_params = best_trial.params
+#
+#     fig = optuna.visualization.plot_parallel_coordinate(study, params=["learning_rate", "batch_size"])
+#     show(fig)
+#     return best_params
+#
+#
+# class SaveStudyCallback:
+#     def __init__(self):
+#         pass
+#
+#     def __call__(self, study: optuna.study.Study, trial: optuna.trial.FrozenTrial) -> None:
+#         i = trial.number
+#         joblib.dump(study, f"optuna_trials\\study_{i}.pkl")
 
 
 def replace_low_values(arr, threshold=-100, repeat=1):
@@ -153,9 +153,11 @@ def replace_high_values(arr, threshold=500, repeat=1):
 
 def run_encoder_decoder_attention_LSTM():
     # load dataset
+    report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
+    report_models_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\models\\models\\LSTM_models'
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data\\lstm_small_subset')
-    df = pd.read_csv(datasets_path + '\\small_subset_lstm_cleaned.csv')   # , index_col=0)
+    df = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')   # , index_col=0)
     # prev_day_prices = df[:-24]['day_ahead_prices_EURO'].values
     # prev_day_prices = df[:-24]['day_ahead_prices'].values
     # df = df[24:]
@@ -254,7 +256,7 @@ def run_encoder_decoder_attention_LSTM():
     # plt.show(block=True)
 
     # define model
-    model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
+    model = EncoderDecoderAttentionLSTM(target_length=48, features=features, target=target,
                                         hidden_size=64, num_layers=3, use_attention=True)
     # 112, 6
     # train model
@@ -267,7 +269,7 @@ def run_encoder_decoder_attention_LSTM():
     # model.custom_save(model.model, filename='BiEncDecAttLSTM.pth')
 
     # load the model
-    m = model.custom_load(filename='BiEncDecAttLSTM_small_dataset.pth')
+    m = model.custom_load(filename=report_models_dir + '\\BiEncDecAttLSTM_small_dataset.pth')
 
     # create feature and target scalers in training data
     model.create_scalers(X_train, y_train)
@@ -502,7 +504,87 @@ def run_multivariate_LSTM():
     pass
 
 
+def lstm_prediction():
+    import os
+    import inspect
+
+    data_path = 'C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\temp\\small_subset_lstm_cleaned.csv'
+    lstm_small_subset_df = pd.read_csv(data_path)
+    features = ['Generation Forecast', 'Forecasted Load', 'Actual Load', 'Solar', 'Wind Offshore', 'Wind Onshore',
+                'holiday', 'hour', 'month', 'day_of_week', 'prev_range_prices', 'hour_sin', 'hour_cos',
+                'day_of_week_sin', 'day_of_week_cos', 'month_sin', 'month_cos', 'renew_total', 'delta_renew_load']
+    target = 'day_ahead_prices'
+
+    # split into train, test, val
+    X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(lstm_small_subset_df, target_column=target,
+                                                                          train_interval=[
+                                                                              pd.Timestamp('2018-10-02 00:00:00'),
+                                                                              pd.Timestamp('2023-11-30 23:00:00')],
+                                                                          test_interval=[
+                                                                              pd.Timestamp('2024-06-01 00:00:00'),
+                                                                              pd.Timestamp('2024-11-30 23:00:00')],
+                                                                          val_interval=[
+                                                                              pd.Timestamp('2023-12-01 00:00:00'),
+                                                                              pd.Timestamp('2024-05-31 23:00:00')])
+
+    # define model
+    encdecattLSTM = EncoderDecoderAttentionLSTM(target_length=24, features=list(X_train.columns),
+                                                target='day_ahead_prices',
+                                                hidden_size=64, num_layers=3, use_attention=True)
+
+    encdecattLSTM.create_scalers(X_train, y_train)
+    # load pre-trained model
+    m = encdecattLSTM.custom_load(
+        filename='C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\models\\models\\LSTM_models\\BiEncDecAttLSTM_small_dataset.pth')
+
+    X_val.index.names = ['timestamp']
+
+    # predict
+    prediction_encdecattLSTM = encdecattLSTM.predict(X=X_val, exp_dir=None).set_index('timestamp')
+    predicted_valuesLSTM = prediction_encdecattLSTM[
+        ['day_ahead_price_predicted']]  # this will be used in benchmark maker
+    predicted_valuesLSTM.to_csv(
+        'C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\temp\\lstm_final_benchmark_results.csv')
+    print(prediction_encdecattLSTM.head())
+
+
 if __name__ == '__main__':
+    # run_encoder_decoder_attention_LSTM()
+    report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
+
+    lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_test_results_48h.csv',
+                           index_col=0)[['day_ahead_price_predicted']]
+    chronos_large_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_large_finetuned_final_benchmark_results.csv',
+                                              index_col=0)
+    chronos_large_pretrained_res = pd.read_csv(
+        report_temp_dir + '\\chronos_large_pretrained_final_benchmark_results.csv', index_col=0)
+    chronos_tiny_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_tiny_finetuned_final_benchmark_resuts.csv',
+                                             index_col=0)
+    chronos_tiny_pretrained_res = pd.read_csv(report_temp_dir + '\\chronos_tiny_pretrained_final_benchmark_results.csv',
+                                              index_col=0)
+    autogluon_res = pd.read_csv(report_temp_dir + '\\Autogluon_high_quality_less_without_known_covariables.csv',
+                                index_col=0)[['predicted']]
+
+    actual_day_ahead_prices = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')[
+        ['Date', 'day_ahead_prices']].set_index('Date')
+    actual_day_ahead_prices.index.names = ['timestamp']
+
+    BenchMaker = BenchmarkMaker(export_dir='results_from_report')
+    BenchMaker.load_dataframes(predictions={'Chronos pretrain tiny': chronos_tiny_pretrained_res,
+                                            'Chronos pretrain large': chronos_large_pretrained_res,
+                                            'Chronos finetuned tiny': chronos_tiny_finetuned_res,
+                                            'Chronos finetuned large': chronos_large_finetuned_res,
+                                            'EncDecAtt LSTM': lstm_res,
+                                            'AutoGluon': autogluon_res}, prices=actual_day_ahead_prices)
+    BenchMaker.calc_errors()
+    print(BenchMaker.data.head())
+
+    BenchMaker.plot_compare_mae()
+    BenchMaker.plot_compare_rmse()
+    BenchMaker.plot_compare_predictions_hourly(start_date=pd.Timestamp('2024-06-01 00:00:00'),
+                                               end_date=pd.Timestamp('2024-06-07 23:00:00'))
+
+
     # run_multivariate_LSTM()
     run_encoder_decoder_attention_LSTM()
     pass
