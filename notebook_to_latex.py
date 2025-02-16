@@ -120,7 +120,7 @@ try:
     body = body.replace('\\DeclareCaptionFormat{nocaption}{}\n    \\captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}','')
 
     # fix bib newpage
-    body = body.replace('{\\section{Bibliography}', '\\newpage\n\\section{Bibliography}')
+    body = body.replace('\\section{Bibliography}', '\\newpage\n\\section{Bibliography}')
 
 
     with open('output.tex', 'w', encoding='utf-8') as f:
