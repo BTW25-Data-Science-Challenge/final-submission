@@ -61,8 +61,9 @@ try:
     # euro sign fix
     body = body.replace('€', '\\euro{}')
 
-    # add TOC
-    body = body.replace('\\maketitle', '\\maketitle\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents\n\\thispagestyle{empty}\n\\newpage')
+    # add TOC and Abstract
+    body = body.replace('\\section{Abstract}', '\\thispagestyle{empty}\n\\newpage\\begin{abstract}\n')
+    body = body.replace('\\section{Introduction}','\\end{abstract}\n\\thispagestyle{empty}\n\\newpage\n\\thispagestyle{empty}\n\\hypersetup{linkcolor=black}\n\\tableofcontents\n\\thispagestyle{empty}\n\\newpage\\section{Introduction}')
 
     # fix pandoc overleaf issue
     body = body.replace('\\pandocbounded', '')
