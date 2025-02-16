@@ -85,7 +85,7 @@ try:
     body = body.replace('\\section{Appendix I', '\\newpage\\appendix\n\\section{Appendix I')
 
     # shorten TOC
-    body = body.replace('\\subsection{Acknowledgement}','\\vspace{5em}\\subsection{Acknowledgement}')
+    body = body.replace('\\subsection{Acknowledgement}','\\vspace{15em}\\subsection{Acknowledgement}')
 
     # set A4
     body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
