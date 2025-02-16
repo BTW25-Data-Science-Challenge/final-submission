@@ -75,7 +75,7 @@ try:
     body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
     body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
     body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
-    body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-story-telling}~\\nameref{visualization-story-telling}')
+    body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
     body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
     body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
 
