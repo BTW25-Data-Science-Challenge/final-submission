@@ -79,6 +79,10 @@ try:
     body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
     body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
     body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
+    body = body.replace('→ Appendix I', '\\nameref{appendix-i-smard-dataset-columns}')
+
+    # create appendix
+    body = body.replace('\\section{Appendix I', '\\appendix\n\\section{Appendix I')
 
     # shorten TOC
     body = body.replace('\\subsection{Acknowledgement}','\\vspace{5em}\\subsection{Acknowledgement}')
