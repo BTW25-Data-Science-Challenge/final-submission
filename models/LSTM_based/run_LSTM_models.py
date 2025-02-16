@@ -153,9 +153,11 @@ def replace_high_values(arr, threshold=500, repeat=1):
 
 def run_encoder_decoder_attention_LSTM():
     # load dataset
+    report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
+    report_models_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\models\\models\\LSTM_models'
     datasets_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data\\lstm_small_subset')
-    df = pd.read_csv(datasets_path + '\\small_subset_lstm_cleaned.csv')   # , index_col=0)
+    df = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')   # , index_col=0)
     # prev_day_prices = df[:-24]['day_ahead_prices_EURO'].values
     # prev_day_prices = df[:-24]['day_ahead_prices'].values
     # df = df[24:]
@@ -267,7 +269,7 @@ def run_encoder_decoder_attention_LSTM():
     # model.custom_save(model.model, filename='BiEncDecAttLSTM.pth')
 
     # load the model
-    m = model.custom_load(filename='BiEncDecAttLSTM_small_dataset.pth')
+    m = model.custom_load(filename=report_models_dir + '\\BiEncDecAttLSTM_small_dataset.pth')
 
     # create feature and target scalers in training data
     model.create_scalers(X_train, y_train)
@@ -503,17 +505,21 @@ def run_multivariate_LSTM():
 
 
 if __name__ == '__main__':
+    # run_encoder_decoder_attention_LSTM()
     report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
 
-    lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_results.csv', index_col=0)
+    lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_test_results.csv',
+                           index_col=0)[['day_ahead_price_predicted']]
     chronos_large_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_large_finetuned_final_benchmark_results.csv',
                                               index_col=0)
     chronos_large_pretrained_res = pd.read_csv(
         report_temp_dir + '\\chronos_large_pretrained_final_benchmark_results.csv', index_col=0)
-    chronos_tiny_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_tiny_finetuned_final_benchmark_results.csv',
+    chronos_tiny_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_tiny_finetuned_final_benchmark_resuts.csv',
                                              index_col=0)
     chronos_tiny_pretrained_res = pd.read_csv(report_temp_dir + '\\chronos_tiny_pretrained_final_benchmark_results.csv',
                                               index_col=0)
+    autogluon_res = pd.read_csv(report_temp_dir + '\\Autogluon_high_quality_less_without_known_covariables.csv',
+                                index_col=0)[['predicted']]
 
     actual_day_ahead_prices = pd.read_csv(report_temp_dir + '\\small_subset_lstm_cleaned.csv')[
         ['Date', 'day_ahead_prices']].set_index('Date')
@@ -524,14 +530,15 @@ if __name__ == '__main__':
                                             'Chronos pretrain large': chronos_large_pretrained_res,
                                             'Chronos finetuned tiny': chronos_tiny_finetuned_res,
                                             'Chronos finetuned large': chronos_large_finetuned_res,
-                                            'EncDecAtt LSTM': lstm_res}, prices=actual_day_ahead_prices)
+                                            'EncDecAtt LSTM': lstm_res,
+                                            'AutoGluon': autogluon_res}, prices=actual_day_ahead_prices)
     BenchMaker.calc_errors()
     print(BenchMaker.data.head())
 
     BenchMaker.plot_compare_mae()
     BenchMaker.plot_compare_rmse()
-    BenchMaker.plot_compare_predictions_hourly(start_date=pd.Timestamp('2024-02-14 00:00:00'),
-                                               end_date=pd.Timestamp('2024-02-23 23:00:00'))
+    BenchMaker.plot_compare_predictions_hourly(start_date=pd.Timestamp('2024-06-01 00:00:00'),
+                                               end_date=pd.Timestamp('2024-06-07 23:00:00'))
 
 
     # run_multivariate_LSTM()
