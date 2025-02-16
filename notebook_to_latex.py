@@ -88,6 +88,9 @@ try:
     # scale down figure
     body = body.replace('{\\includegraphics[keepaspectratio]{src/compare_LSTM_models_on_val.png}}','{\\includegraphics[keepaspectratio, scale = 0.7]{src/compare_LSTM_models_on_val.png}}')
 
+    # fix another link
+    body = body.replace('https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf',
+                        '\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/}\\hspace{0em}\\href{https://www.smard.de/resource/blob/205652/63fcff2c9813096fa2229d769da164ef/smard-user-guide-09-2021-data.pdf}{\\color{black}smard-user-guide-09-2021-data.pdf}')
 
     # create links
     body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
