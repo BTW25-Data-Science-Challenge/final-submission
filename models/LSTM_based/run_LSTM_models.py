@@ -256,7 +256,7 @@ def run_encoder_decoder_attention_LSTM():
     # plt.show(block=True)
 
     # define model
-    model = EncoderDecoderAttentionLSTM(target_length=24, features=features, target=target,
+    model = EncoderDecoderAttentionLSTM(target_length=48, features=features, target=target,
                                         hidden_size=64, num_layers=3, use_attention=True)
     # 112, 6
     # train model
@@ -504,11 +504,55 @@ def run_multivariate_LSTM():
     pass
 
 
+def lstm_prediction():
+    import os
+    import inspect
+
+    data_path = 'C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\temp\\small_subset_lstm_cleaned.csv'
+    lstm_small_subset_df = pd.read_csv(data_path)
+    features = ['Generation Forecast', 'Forecasted Load', 'Actual Load', 'Solar', 'Wind Offshore', 'Wind Onshore',
+                'holiday', 'hour', 'month', 'day_of_week', 'prev_range_prices', 'hour_sin', 'hour_cos',
+                'day_of_week_sin', 'day_of_week_cos', 'month_sin', 'month_cos', 'renew_total', 'delta_renew_load']
+    target = 'day_ahead_prices'
+
+    # split into train, test, val
+    X_train, y_train, X_test, y_test, X_val, y_val = train_test_val_split(lstm_small_subset_df, target_column=target,
+                                                                          train_interval=[
+                                                                              pd.Timestamp('2018-10-02 00:00:00'),
+                                                                              pd.Timestamp('2023-11-30 23:00:00')],
+                                                                          test_interval=[
+                                                                              pd.Timestamp('2024-06-01 00:00:00'),
+                                                                              pd.Timestamp('2024-11-30 23:00:00')],
+                                                                          val_interval=[
+                                                                              pd.Timestamp('2023-12-01 00:00:00'),
+                                                                              pd.Timestamp('2024-05-31 23:00:00')])
+
+    # define model
+    encdecattLSTM = EncoderDecoderAttentionLSTM(target_length=24, features=list(X_train.columns),
+                                                target='day_ahead_prices',
+                                                hidden_size=64, num_layers=3, use_attention=True)
+
+    encdecattLSTM.create_scalers(X_train, y_train)
+    # load pre-trained model
+    m = encdecattLSTM.custom_load(
+        filename='C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\models\\models\\LSTM_models\\BiEncDecAttLSTM_small_dataset.pth')
+
+    X_val.index.names = ['timestamp']
+
+    # predict
+    prediction_encdecattLSTM = encdecattLSTM.predict(X=X_val, exp_dir=None).set_index('timestamp')
+    predicted_valuesLSTM = prediction_encdecattLSTM[
+        ['day_ahead_price_predicted']]  # this will be used in benchmark maker
+    predicted_valuesLSTM.to_csv(
+        'C:\\Users\\Hannes\\Desktop\\BTW_time_seeries_project\\final-submission\\temp\\lstm_final_benchmark_results.csv')
+    print(prediction_encdecattLSTM.head())
+
+
 if __name__ == '__main__':
     # run_encoder_decoder_attention_LSTM()
     report_temp_dir = 'C:\\Users\\Hannes\\Desktop\\wise_2024_25\\Time_series_forecasting_project\\final-submission\\temp'
 
-    lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_test_results.csv',
+    lstm_res = pd.read_csv(report_temp_dir + '\\lstm_final_benchmark_test_results_48h.csv',
                            index_col=0)[['day_ahead_price_predicted']]
     chronos_large_finetuned_res = pd.read_csv(report_temp_dir + '\\chronos_large_finetuned_final_benchmark_results.csv',
                                               index_col=0)
