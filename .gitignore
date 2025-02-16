@@ -11,3 +11,6 @@ output.tex
 !feature_importance.csv
 !foreCastAllData.csv
 !resAG.csv
+!comparison-forecastet-known-ag.csv
+!comparison-ag.csv
+!preset-known.csv
