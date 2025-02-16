@@ -27,7 +27,8 @@ try:
     # remove Utils
     startutils = body.index('\\subsection{Utils}\\label{utils}') + len('\\subsection{Utils}\\label{utils}')
     endutils = body.index('\\subsection{Gathering Domain')
-    body = body[:startutils] + '\\textit{code omitted - see notebook}' + body[endutils:]
+    utilsstring = '\\textit{code omitted - see notebook for the following contents:}\\begin{itemize}\\tightlist\n\\item installs and imports\n\\item base model structure\n\\item models implementation\n\\item benchmarking class\n\\item downloading data\n\\item loading data\n\\end{itemize}'
+    body = body[:startutils] + utilsstring + body[endutils:]
 
     # pretty table formatting
     body = body.replace('\\begin{longtable}[]{@{}', "\\rowcolors{2}{white}{gray!25}\n\\begin{longtable}[]{@{}")
