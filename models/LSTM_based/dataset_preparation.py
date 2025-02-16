@@ -221,8 +221,8 @@ if __name__ == '__main__':
         '\\models\\LSTM_based', '\\data\\lstm_small_subset')
     datasets_load_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
         '\\models\\LSTM_based', '\\data')
-    # full_df = combine_df(dir=datasets_path + '\\sources')
-    # full_df.to_csv(datasets_path + '\\small_subset_lstm.csv')
+    full_df = combine_df(dir=datasets_path + '\\sources')
+    full_df.to_csv(datasets_path + '\\small_subset_lstm.csv')
 
     df = pd.read_csv(datasets_path + '\\small_subset_lstm_cleaned.csv', index_col=0)
     df_new = add_time_features(df)
