@@ -84,6 +84,10 @@ try:
     # set A4
     body = body.replace('\\documentclass[11pt]{article}','\\documentclass[a4paper]{article}')
 
+    # scale down figure
+    body = body.replace('{\\includegraphics[keepaspectratio]{src/compare_LSTM_models_on_val.png}}','{\\includegraphics[keepaspectratio, scale = 0.7]{src/compare_LSTM_models_on_val.png}}')
+
+
     # create links
     body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
     body = body.replace('{[}SMARD user guide 15.12.2024{]}', '\\hyperref[bibliography]{[SMARD user guide 15.12.2024]}.', 1)
