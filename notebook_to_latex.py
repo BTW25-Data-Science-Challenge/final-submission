@@ -106,22 +106,21 @@ try:
     body = body.replace('\\end{Verbatim}','\\end{Verbatim}\n\\end{small}')
 
     # create links
-    body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis,\n2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis, 2024]}.', 1)
-    body = body.replace('{[}SMARD user guide, 2024{]}', '\\hyperref[bibliography]{[SMARD user guide, 2024]}.', 1)
+    body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis,\n2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis, 2024]}', 1)
+    body = body.replace('{[}SMARD user guide, 2024{]}', '\\hyperref[bibliography]{[SMARD user guide, 2024]}', 1)
     body = body.replace('{[}European Commission, EU ETS, 2024{]}', '\\hyperref[bibliography]{[European Commission, EU ETS, 2024]}.', 1)
-    body = body.replace('{[}Investing, Carbon Emissions Futures,\n2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures, 2024]}.', 1)
-    body = body.replace('{[}Smard, Negative wholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}.', 1)
-    body = body.replace('{[}Finanztools,\nInflationsraten Deutschland, 2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland, 2025]}.', 1)
-    body = body.replace('{[}Smard, Großhandelspreise,\n2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise, 2024]}.', 1)
+    body = body.replace('{[}Investing, Carbon Emissions Futures,\n2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures, 2024]}', 1)
+    body = body.replace('{[}Smard, Negative wholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}', 1)
+    body = body.replace('{[}Finanztools,\nInflationsraten Deutschland, 2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland, 2025]}', 1)
+    body = body.replace('{[}Smard, Großhandelspreise,\n2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise, 2024]}', 1)
     # check if the correct amount of links appear before the bibliography
     if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 7): print("link creation error")
 
     # fix figure captions
     body = body.replace('\\DeclareCaptionFormat{nocaption}{}\n    \\captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}','')
 
-    # fix svg figure
-    body = body.replace('{\\includesvg[keepaspectratio]{src/AG-Ensemble.svg}}',
-                        '\\begin{figure}\n\\centering\n{\\includegraphics[keepaspectratio]{src/AG-Ensemble2.pdf}}\n\\caption{AG-Ensemble}\n\\end{figure}\n')
+    # fix bib newpage
+    body = body.replace('{\\section{Bibliography}', '\\newpage\n\\section{Bibliography}')
 
 
     with open('output.tex', 'w', encoding='utf-8') as f:
