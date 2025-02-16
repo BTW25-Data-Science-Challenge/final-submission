@@ -106,7 +106,7 @@ try:
     body = body.replace('{[}SMARD user guide, 2024{]}', '\\hyperref[bibliography]{[SMARD user guide, 2024]}.', 1)
     body = body.replace('{[}European Commission, EU ETS, 2024{]}', '\\hyperref[bibliography]{[European Commission, EU ETS, 2024]}.', 1)
     body = body.replace('{[}Investing, Carbon Emissions Futures,\n2024{]}', '\\hyperref[bibliography]{[Investing, Carbon Emissions Futures, 2024]}.', 1)
-    body = body.replace('{[}Smard, Negative\nwholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}.', 1)
+    body = body.replace('{[}Smard, Negative wholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}.', 1)
     body = body.replace('{[}Finanztools,\nInflationsraten Deutschland, 2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland, 2025]}.', 1)
     body = body.replace('{[}Smard, Großhandelspreise,\n2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise, 2024]}.', 1)
     # check if the correct amount of links appear before the bibliography
