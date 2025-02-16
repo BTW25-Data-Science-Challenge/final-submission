@@ -96,6 +96,9 @@ try:
     body = body.replace('\\begin{longtable}[]{@{}','{\\fontsize{8pt}{10pt}\\selectfont\\begin{longtable}[]{@{}')
     body = body.replace('\\end{longtable}','\\end{longtable}}')
 
+    # smaller code blocks
+    body = body.replace('\\begin{Verbatim}','\\begin{small}\\begin{Verbatim}')
+    body = body.replace('\\end{Verbatim}','\\end{Verbatim}\\end{small}')
 
     # create links
     body = body.replace('{[}Netztransparenz, Index-Ausgleichspreis\n16.12.2024{]}', '\\hyperref[bibliography]{[Netztransparenz, Index-Ausgleichspreis 16.12.2024]}.', 1)
