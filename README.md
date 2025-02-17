@@ -4,9 +4,9 @@ The overarching repository for the Dresden Database Research Groups Submission t
 This is the report of the Dresden Database Research Group (DDRG)
 
 To Execute the notebook please execute the following requirements:
-    - Data: Please download our latest Data which can be found at: https://datashare.tu-dresden.de/s/HE8zC7WZg6jKSJz
-    - Install the requirements.txt
-    - Clone the repository from github: git@github.com:BTW25-Data-Science-Challenge/final-submission.git
+- Data: Please download our latest Data which can be found at: https://datashare.tu-dresden.de/s/HE8zC7WZg6jKSJz
+- Install the requirements.txt
+- Clone the repository from github: git@github.com:BTW25-Data-Science-Challenge/final-submission.git
                                         
 
 In case of questions feel free to contact jimmy.poehlmann@tu-dresden.de
