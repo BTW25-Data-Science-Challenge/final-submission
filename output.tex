@@ -554,7 +554,7 @@ wind speeds and little sunshine, on which the volume of cheap, renewable
 energy would be much lower, raising the need for alternative power
 plants to fill the gap with higher priced energy.
 
-\paragraph{Importance Of Prediction}\label{importance-of-prediction}
+\paragraph{Importance of Prediction}\label{importance-of-prediction}
 
 While these dynamic factors are important for providers and customers
 for economic planning as previously described, prediction and planning
@@ -609,7 +609,7 @@ consequently affecting electricity consumption. Finally, the process of
 downloading the data in the previous utils section is described and
 results of the data analysis are provided.
 
-    \subsection{Data Presentation And
+    \subsection{Data Presentation and
 Discussion}\label{data-presentation-and-discussion}
 
 In this section the different data sources and their according data
@@ -1372,7 +1372,7 @@ NewsApi embeddings example:
 
     \subsection{Discarded Ideas}\label{discarded-ideas}
 
-\paragraph{GDP And Inflation}\label{gdp-and-inflation}
+\paragraph{GDP and Inflation}\label{gdp-and-inflation}
 
 An example of an idea that was considered but did not end up in the
 final solution is the inclusion of GDP (Gross Domestic Product) and
@@ -1462,7 +1462,7 @@ workaround for this problem is to encode the different segments, like
 days, hours, etc., to integer values, each representing one part of the
 time format.
 
-    \paragraph{Preprocessing For LSTM Based
+    \paragraph{Preprocessing for LSTM Based
 Models}\label{preprocessing-for-lstm-based-models}
 
     Since among other models we are using LSTM's for forecasting, the
@@ -1643,7 +1643,7 @@ for future work were discussed. The data was analyzed from different
 perspectives, such as correlation, missing values, and feature
 importance in the models used.
 
-    \section{Visualization And Story
+    \section{Visualization and Story
 Telling}\label{visualization-and-story-telling}
 
     The topic of this chapter is the models used for forecasting. The theory
@@ -2092,6 +2092,73 @@ like TFT, likely due to their increased informational content.
 components of the TFT model}
 \end{figure}
 
+    \subparagraph{Partial Dependency
+Analysis}\label{partial-dependency-analysis}
+
+Partial Dependency Plots (PDPs) help visualise the influence of
+individual features on a model's predictions. They work by averaging the
+model output over different values of a particular feature, while
+holding all other features constant.
+
+    \begin{figure}
+\centering
+{\includegraphics[keepaspectratio]{src/tft_pdp_gas_price.pdf}}
+\caption{Partial Dependency Plot showing the effect of gas prices on
+predicted day-ahead electricity prices at different times of the day}
+\end{figure}
+
+    The PDPs focus on four features corresponding to the TFT model. Forecast
+Load (MW) is the expected electricity demand, while Day of Week,
+captured by a cosine function, reflects cyclical patterns. Gas Price
+(EUR/MWh) is the cost of natural gas, and Solar Generation (MW) is the
+actual electricity generation from photovoltaic (PV) sources. Each PDP
+shows the average predicted electricity price for different values, with
+shaded areas indicating the interquartile range (IQR).
+
+The PDP shows a strong positive correlation between gas and electricity
+prices. The relationship is approximately linear, indicating that as gas
+prices increase, electricity prices also increase due to higher
+generation costs. Higher gas prices lead to a slight flattening of the
+rate of increase, suggesting mitigating factors like switching to
+alternative energy sources or demand reduction. A detailed PDP analysis
+shows that the impact of gas prices on electricity prices depends on the
+time of day. Electricity prices are higher during peak demand hours
+(12:00 and 18:00) than at night (0:00 and 6:00). This suggests gas
+prices affect electricity prices more at high demand, probably because
+gas-fired power plants are used more.
+
+    \begin{figure}
+\centering
+{\includegraphics[keepaspectratio]{src/tft_pdp_all_hours.pdf}}
+\caption{Partial Dependency Plots for the TFT model showing the impact
+of forecasted load, day of the week, gas price, and solar generation on
+predicted day-ahead electricity prices}
+\end{figure}
+
+    There is a positive correlation between projected electricity demand and
+projected prices, with the largest price increases occurring at lower
+levels of demand. As demand continues to rise, the impact on price
+growth diminishes, suggesting potential saturation effects. The IQR is
+wider at medium demand levels, indicating that factors such as renewable
+generation and fuel costs may influence price variability.
+
+The PDP for the day of the week shows a cyclical pattern, with lower
+prices on weekends and higher prices on weekdays, driven by industrial
+load fluctuations. Price variability over hours remains stable,
+reflecting consistent weekly trends.
+
+There is a clear negative relationship between solar generation and
+prices. Prices fall sharply as solar generation increases, particularly
+at low to medium levels, but the decline slows at very high generation
+levels, possibly due to market saturation or price floors. The IQR
+remains stable, indicating a predictable and consistent price impact of
+solar generation across different hours.
+
+The PDP analysis reveals the main drivers of electricity price
+forecasts: gas prices and demand have a positive impact on prices, while
+solar generation reduces them. The time-dependent gas price effect
+highlights the importance of peak-hour dynamics.
+
     \subparagraph{Temporal Patterns}\label{temporal-patterns}
 
 Besides feature importance, TFT is designed to facilitate the analysis
@@ -2484,7 +2551,7 @@ challenge date---February 18---exactly one year earlier.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_114_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_119_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
@@ -2602,7 +2669,7 @@ number one is visualized in the graphs below.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_120_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_125_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
@@ -2696,8 +2763,8 @@ A depiction of all model components and its interactions is shown below
 \caption{Overview of TFT model architecture}
 \end{figure}
 
-    \paragraph{Implementation of day-ahead electricity price
-forecasting}\label{implementation-of-day-ahead-electricity-price-forecasting}
+    \paragraph{Implementation of Day-ahead Electricity Price
+Forecasting}\label{implementation-of-day-ahead-electricity-price-forecasting}
 
 Given its flexibility to consider multiple types of covariate
 information, which foremost represent surrogates of supply and demand
@@ -3022,7 +3089,7 @@ improvements in forecast accuracy through additional data points.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_140_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_145_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
@@ -3145,7 +3212,7 @@ preset performs better while also having a shorter runtime.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_144_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_149_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
@@ -3216,21 +3283,21 @@ model architectures that can better handle the embedding data.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_147_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_152_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_147_1.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_152_1.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_147_2.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_152_2.png}
     \end{center}
     { \hspace*{\fill} \\}
     
-    \paragraph{Predicting Intraday-Prices As Additional
+    \paragraph{Predicting Intraday-Prices as Additional
 Feature}\label{predicting-intraday-prices-as-additional-feature}
 
 Besides day-ahead prices, which are the target value of this time series
@@ -3395,19 +3462,56 @@ As a result, this approach that investigated the potential of using
 predicted intraday prices as an additional feature for day-ahead price
 prediction, was not incorporated into the final model.
 
-    \subsection{Autogluon with forecasted
-known\_covariables}\label{autogluon-with-forecasted-known_covariables}
+    \subsection{Autogluon with Forecasted Known
+Covariates}\label{autogluon-with-forecasted-known-covariates}
 
-When analyzing the models, it was found that some models in AG do not
-consider past covariates by default, whereas the TFT model actively
-utilizes them. This suggests that AG may discard valuable information
-that could enhance prediction accuracy. To investigate whether
-prediction performance could be improved, AG was modified to use all
-features as covariates. It was hypothesized that a model with access to
-all relevant historical data would provide more accurate predictions. To
-test this assumption, it was initially presumed that all features were
-known for the forecast day. The corresponding values are presented in
-the following plot, with errors measured using the MAE.
+Following the rather low values found when computing the feature
+importances of AG (see sect Feature Importances). We performed an
+in-depth analysis of AutoGluon models. During this process, it was found
+that most of its models do not consider past-only covariates, which is a
+large part of our data, as can be seen in the table below.
+
+    \rowcolors{2}{white}{gray!25}
+{\fontsize{8pt}{10pt}\selectfont\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2645}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3388}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.0331}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3636}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Model
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Static features (continuous + categorical)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Known covariates (continuous + categorical)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Past covariates (continuous + categorical)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+DirectTabularModel & ✅ & ✅ & \\
+RecursiveTabularModel & ✅ & ✅ & \\
+DeepARModel & ✅ & ✅ & \\
+PatchTSTModel & & ✅ & \\
+TemporalFusionTransformerModel & ✅ & ✅ & ✅ \\
+TiDEModel & ✅ & ✅ & \\
+WaveNetModel & ✅ & ✅ & \\
+\end{longtable}}
+
+\hyperref[bibliography]{[AutoGluon Forecasting Model Zoo, 2025]}
+
+    To our knowledge TFT is the only model that AG uses that can use
+past-only known covariates. This suggests that AG may discard valuable
+information that could enhance prediction accuracy. It was hypothesized
+that a model with access to all relevant historical data could better
+leverage our extensive collection of over 150 external influences,
+leading to improved predictions. To test this assumption, we initially
+presumed that all features were already known for the target forecast
+day---for example, assuming that tomorrow's exact gas prices are
+available today. Under this assumption, several AG models were trained.
+The resulting error values, measured using MAE, are presented below.
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \prompt{In}{incolor}{10}{\boxspacing}
@@ -3452,28 +3556,59 @@ the following plot, with errors measured using the MAE.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_157_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_164_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
-    The best model (best\_quality\_all\_True) was then provided with
-self-predicted feature data. Feature prediction was performed using AG
-with Chronos as the underlying model---a combination that approximated
-future feature values and supplied the model with estimated input data.
-A weight-sharing approach was employed, ensuring that all features used
-the same model for forecasting. Additionally, Chronos enables zero-shot
-prediction, allowing the model to be applied to new, unseen data without
-prior fine-tuning. This feature is particularly beneficial when training
-data is insufficient for specific scenarios or when the model must adapt
-flexibly to different input variables.
+    As can be seen, the MAE and RMSE decreased majorly from before. For
+example, the MAE of our best model dropped from about 19 to about 13,
+while the RMSE dropped from 31 to about 25. This indicates that the
+model can now make greater use of our collected data.~
+
+To verify that the model now actually uses the provided features, the
+feature importances were computed again, as presented below. However, as
+there are too many features to plot, only the 10 most and least
+important were considered. As can be seen there, the three most
+important features are covariates that would actually be known as they
+are already forecasts provided by third parties. It might be worth
+further investigation in the future as to why AG does not use them in
+our original version when it is so important. One possible explanation
+could be that they become only useful in combination with another
+past-only covariate.
+
+    \begin{figure}
+\centering
+{\includegraphics[keepaspectratio]{src/feature_importance_plot.pdf}}
+\caption{Ten most and least important feature importances found by AG
+when considering all covariates as known ahead of time}
+\end{figure}
+
+    However, as most of our data is unknown for the future, this approach
+can not be utilized out of the box. Hence, we explored an approach to
+provide future values regardless, simply by forecasting them. For this,
+the best model trained on the assumption that all features are known
+covariates was used. However, forecasts were provided for each feature
+instead of the true future values during evaluation. This is depicted
+below. To calculate those sub-forecasts, we used a pretrained Chronos
+model. As shown in previous experiments (presented above), the
+pretrained-only Chronos model already performs well. Additionaly, using
+Chronos allows us to use the same model via weight sharing for
+forecasting each feature, this saves memory and speeds up the prediction
+process.
+
+\begin{figure}
+\centering
 {\includegraphics[keepaspectratio]{src/AG-Ensemble2.pdf}}
-In this scenario, an MAE of 24.0815 was achieved. Unfortunately, this
-result was significantly worse than the prediction without known
-covariates. This discrepancy is likely due to the large deviations in
-the predicted feature values. The resulting predictions for the test
-period are shown in the next figure, where they are compared with the
-actual values and the previous best model, AG High Quality Less without
-Known Covariates.
+\caption{AG-Ensemble}
+\end{figure}
+
+With this approach, an MAE of 24.08 was achieved. Unfortunately, this
+result is significantly worse than the prediction without known
+covariates. This discrepancy is likely the result of errors in the
+sub-forecasts that propagate to the final forecast conducted by AG. The
+resulting predictions for the test period are shown in the figure below.
+There, they are compared with the actual values and the previous best
+model, AG High Quality Less without Known Covariates.
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \prompt{In}{incolor}{1}{\boxspacing}
@@ -3507,7 +3642,7 @@ Known Covariates.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_159_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_168_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
@@ -3608,7 +3743,7 @@ from June 1, 2024, to November 30, 2024.
 \end{tcolorbox}
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{9}{\boxspacing}
+\prompt{In}{incolor}{13}{\boxspacing}
 \begin{small}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{BenchMaker} \PY{o}{=} \PY{n}{BenchmarkMaker}\PY{p}{(}\PY{n}{export\PYZus{}dir}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{results\PYZus{}from\PYZus{}report}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
@@ -3629,27 +3764,36 @@ from June 1, 2024, to November 30, 2024.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_169_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_178_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_169_1.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_178_1.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_169_2.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_178_2.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     All models outperform the baseline, with the two best-performing ones
 being the fine-tuned Chronos-T5 (Large) model and the AutoGluon
 framework. AutoGluon achieved better results in terms of RMSE, while
-Chronos-T5 performed better in minimizing MAE. Since our objective is to
-minimize MAE, we will use the Chronos-T5 model to generate the final
-forecast. However, the LSTM and TFT approaches also show promising
-results.
+Chronos-T5 performed better for MAE. The LSTM and TFT approaches also
+showed promising results.
+
+Nonetheless, Chronos and AutoGluon perform fairly similarly. This is
+likely because AutoGluon often relies on Chronos models under the hood
+to make its forecasts. For this it performs it own finetuning and
+ensembles Chronos with other established Forecasting models.
+Additionally, we find that AutoGluon uses a newer and improved version
+of Chronos compared to ours that was published in the recent weeks.
+
+However, our Hyperparameter optimized finetuning of Chronos seems to
+have improved its accuraccy enough to still be very competitive with
+this much more complex approach employed by AutoGluon.
 
     \subsection{Final Forecast}\label{final-forecast}
 
@@ -3718,21 +3862,21 @@ results.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_173_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_182_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
     \subsection{Conclusion}\label{conclusion}
 
 We compared our best performing models and generated the final forecast.
-Since Chronos showed the best results on the MAE we used this model the
-final forecast. We can see that the day-ahead energy price is relatively
-high compared to the average and compared to the prices one year ago
-which are presented in the plot above.
+Since Chronos showed the best results on the MAE we used this model for
+the final forecast. We can see that the day-ahead energy price is
+relatively high compared to the average and compared to the prices one
+year ago which are presented in the plot above.
 
     \section{Summary \& Future Work}\label{summary-future-work}
 
-    \subsection{Self-Organization In Academic
+    \subsection{Self-Organization in Academic
 Projects}\label{self-organization-in-academic-projects}
 
 Team Structure and Initial Organization: The BTW25 Data Science
@@ -4070,6 +4214,9 @@ Forecasting Day-Ahead Electricity System Demand \\
 Li, G., \& Tian, G. (2020, November). Do RNN and LSTM have long memory?.
 In International Conference on Machine Learning (pp.~11365-11375).
 PMLR. \\
+{[}AutoGluon Forecasting Model Zoo, 2025{]} & auto.gluon.ai, 16.02.2025,
+URL:
+https://auto.gluon.ai/dev/tutorials/timeseries/forecasting-model-zoo.html \\
 {[}European Commission, EU ETS, 2024{]} & commission.europa.eu, European
 Commission, 16.12.2024, URL:
 https://climate.ec.europa.eu/eu-action/eu-emissions-trading-system-eu-ets\_en \\
