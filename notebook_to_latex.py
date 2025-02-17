@@ -69,24 +69,21 @@ try:
     body = body.replace('\\pandocbounded', '')
     body = body.replace('    \\makeatletter\n    \\newsavebox\\pandoc@box\n    \\newcommand*[1]{%\n      \\sbox\\pandoc@box{#1}%\n      % scaling factors for width and height\n      \\Gscale@div\\@tempa\\textheight{\\dimexpr\\ht\\pandoc@box+\\dp\\pandoc@box\\relax}%\n      \\Gscale@div\\@tempb\\linewidth{\\wd\\pandoc@box}%\n      % select the smaller of both\n      \\ifdim\\@tempb\\p@<\\@tempa\\p@\n        \\let\\@tempa\\@tempb\n      \\fi\n      % scaling accordingly (\\@tempa < 1)\n      \\ifdim\\@tempa\\p@<\\p@\n        \\scalebox{\\@tempa}{\\usebox\\pandoc@box}%\n      % scaling not needed, use as it is\n      \\else\n        \\usebox{\\pandoc@box}%\n      \\fi\n    }\n    \\makeatother', '')
 
-    # fix unicode char
-    body = body.replace('✅', '\\checkmark')
-
     # make section links work
-    #body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
-    #body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
-    #body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
-    #body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
-    #body = body.replace('→ Gathering\nDomain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
-    #body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
-    #body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
-    #body = body.replace('→ Data\nSources', '\\ref{data-sources}~\\nameref{data-sources}')
-    #body = body.replace('→ Visualization and Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
-    #body = body.replace('→\nVisualization and Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
-    #body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
-    #body = body.replace('→ Summary and Future Work', '\\ref{summary-and-future-work}~\\nameref{summary-and-future-work}')
-    #body = body.replace('→ Appendix I', '\\nameref{appendix-i-smard-dataset-columns}')
-    #if (body.count('→') != 0): print("→ replacement error")
+    body = body.replace('→ Data Analysis', '\\ref{data-analysis}~\\nameref{data-analysis}')
+    body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
+    body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→ Gathering\nDomain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
+    body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
+    body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
+    body = body.replace('→ Data\nSources', '\\ref{data-sources}~\\nameref{data-sources}')
+    body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
+    body = body.replace('→\nVisualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
+    body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
+    body = body.replace('→ Summary \\& Future Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
+    body = body.replace('→ Appendix I', '\\nameref{appendix-i-smard-dataset-columns}')
+    if (body.count('→') != 0): print("→ replacement error")
 
     # create appendix
     body = body.replace('\\section{Appendix I', '\\newpage\\appendix\n\\section{Appendix I')
