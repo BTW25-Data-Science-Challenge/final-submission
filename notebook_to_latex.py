@@ -74,12 +74,16 @@ try:
     body = body.replace('→Data Cleaning/SMARD-Data Preprocessing', '\\ref{smard-data-preprocessing}~\\nameref{smard-data-preprocessing}')
     body = body.replace('→SMARD\nElectricity Data', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
     body = body.replace('→SMARD Electricity\nData', '\\ref{smard-electricity-market-data}~\\nameref{smard-electricity-market-data}')
+    body = body.replace('→ Gathering\nDomain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
     body = body.replace('→ Gathering Domain Knowledge', '\\ref{gathering-domain-knowledge}~\\nameref{gathering-domain-knowledge}')
     body = body.replace('→ Data Sources', '\\ref{data-sources}~\\nameref{data-sources}')
+    body = body.replace('→ Data\nSources', '\\ref{data-sources}~\\nameref{data-sources}')
     body = body.replace('→ Visualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
+    body = body.replace('→\nVisualization \\& Story Telling', '\\ref{visualization-and-story-telling}~\\nameref{visualization-and-story-telling}')
     body = body.replace('→ Predictive Modelling', '\\ref{predictive-modeling}~\\nameref{predictive-modeling}')
-    body = body.replace('→ Summary \\&\nFuture Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
+    body = body.replace('→ Summary \\& Future Work', '\\ref{summary-future-work}~\\nameref{summary-future-work}')
     body = body.replace('→ Appendix I', '\\nameref{appendix-i-smard-dataset-columns}')
+    if (body.count('→') != 0): print("→ replacement error")
 
     # create appendix
     body = body.replace('\\section{Appendix I', '\\newpage\\appendix\n\\section{Appendix I')
