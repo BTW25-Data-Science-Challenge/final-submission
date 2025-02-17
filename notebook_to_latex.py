@@ -117,8 +117,10 @@ try:
     body = body.replace('{[}Smard, Negative wholesale prices, 2025{]}', '\\hyperref[bibliography]{[Smard, Negative wholesale prices, 2025]}', 1)
     body = body.replace('{[}Finanztools,\nInflationsraten Deutschland, 2025{]}', '\\hyperref[bibliography]{[Finanztools, Inflationsraten Deutschland, 2025]}', 1)
     body = body.replace('{[}Smard, Großhandelspreise,\n2024{]}', '\\hyperref[bibliography]{[Smard, Großhandelspreise, 2024]}', 1)
+    body = body.replace('{[}AutoGluon Forecasting Model Zoo, 2025{]}',
+                        '\\hyperref[bibliography]{[AutoGluon Forecasting Model Zoo, 2025]}', 1)
     # check if the correct amount of links appear before the bibliography
-    if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 7): print("link creation error")
+    if (body[:body.index('label{bibliography}')].count('hyperref[bibliography') != 8): print("link creation error")
 
     # fix figure captions
     body = body.replace('\\DeclareCaptionFormat{nocaption}{}\n    \\captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}','')
