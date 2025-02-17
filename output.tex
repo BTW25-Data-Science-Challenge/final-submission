@@ -461,19 +461,25 @@ Research Group to forecast day-ahead electricity prices as part of the
 BTW 2025 Data Science Challenge, with a focus on comparing and enhancing
 several established time series forecasting methods. Initially, general
 domain knowledge related to energy markets and pricing was researched
-and presented (see section \ref{gathering-domain-knowledge}~\nameref{gathering-domain-knowledge}). Following
-this, multiple data sources influencing day-ahead prices were
+and presented (see section
+\hyperref[gathering-domain-knowledge]{Gathering Domain Knowledge}).
+Following this, multiple data sources influencing day-ahead prices were
 identified, including finance, meteorology, and societal data. Various
 preprocessing techniques are also discussed. The data underwent thorough
 analysis using methods such as explainable machine learning models,
 including Temporal Fusion Transformers. Based on this analysis, data
 preparation was carried out iteratively. Additionally, the aspect of
-feature importance was compared across models (see section \ref{data-sources}~\nameref{data-sources}). In the subsequent section, the models utilized are described
-in detail, and intermediate results are presented (see section \ref{visualization-and-story-telling}~\nameref{visualization-and-story-telling}). The models are then compared in a final
-benchmark to identify the most optimal model from the available methods
-(see section \ref{predictive-modeling}~\nameref{predictive-modeling}). Finally, the report summarizes the
-results, reflects on the experience gained, and outlines potential
-features for future work (see section \ref{summary-future-work}~\nameref{summary-future-work}).
+feature importance was compared across models (see section
+\hyperref[data-sources]{Data Sources}). In the subsequent section, the
+models utilized are described in detail, and intermediate results are
+presented (see section
+\hyperref[visualization-and-story-telling]{Visualization and Story Telling}).
+The models are then compared in a final benchmark to identify the most
+optimal model from the available methods (see section
+\hyperref[predictive-modeling]{Predictive Modelling}). Finally, the
+report summarizes the results, reflects on the experience gained, and
+outlines potential features for future work (see section
+\hyperref[summary-and-future-work]{Summary and Future Work}).
 
     \section{Utils}\label{utils}\textit{code omitted - see notebook for the following contents:}\begin{itemize}\tightlist
 \item installs and imports
@@ -630,11 +636,13 @@ explaining the types and context of available data. This is especially
 important for datasets which went through different circumstances or
 determination methods within our selected period of time, as these
 changes might make some additional preprocessing necessary (as explained
-in \ref{smard-data-preprocessing}~\nameref{smard-data-preprocessing}). SMARD presents a reliable
-data source due to it being a government backed service, and the wide
-variety of datasets downloadable freely.
+in section
+\hyperref[smard-data-preprocessing]{SMARD-Data Preprocessing}). SMARD
+presents a reliable data source due to it being a government backed
+service, and the wide variety of datasets downloadable freely.
 
-The dataset contains the columns presented in \nameref{appendix-i-smard-dataset-columns}. Additional
+The dataset contains the columns presented in
+\hyperref[appendix-i-smard-dataset-columns]{Appendix I}. Additional
 information can be found in the \hyperref[bibliography]{[SMARD user guide, 2024]}.
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -1424,18 +1432,19 @@ work.
     \paragraph{SMARD-Data Preprocessing}\label{smard-data-preprocessing}
 
 The SMARD-Dataset contains many different variables provided by smard.de
-(SMARD-dataset explained in more detail in Section \ref{smard-electricity-market-data}~\nameref{smard-electricity-market-data}). However the data is only available in the form of multiple
-different tables in different files, therefore important steps of
-preprocessing and merging are needed to actually use the data and make
-it compatible with the other non-SMARD data sources. At first, the names
-of the columns have to be changed to differentiate them. The reason for
-that lies in the way the data is provided; e.g., `price actual' and
-`price forecast' are not stored in the same table and have to be
-downloaded separately but are both initially just named `price'.
-Therefore, the actual name is only implied by the download source, and
-after a merge of the different tables, it would lead to a name
-collision. To solve this issue, every column name gets extended with an
-explicit prefix.
+(SMARD-dataset explained in more detail in section
+\hyperref[smard-electricity-market-data]{SMARD Electricity Data}).
+However the data is only available in the form of multiple different
+tables in different files, therefore important steps of preprocessing
+and merging are needed to actually use the data and make it compatible
+with the other non-SMARD data sources. At first, the names of the
+columns have to be changed to differentiate them. The reason for that
+lies in the way the data is provided; e.g., `price actual' and `price
+forecast' are not stored in the same table and have to be downloaded
+separately but are both initially just named `price'. Therefore, the
+actual name is only implied by the download source, and after a merge of
+the different tables, it would lead to a name collision. To solve this
+issue, every column name gets extended with an explicit prefix.
 
 Another required preprocessing step is to deal with ``not a number''
 (short, NaN) values because some of our models cannot work with this
@@ -1453,7 +1462,8 @@ Two popular options to deal with empty values are:
   Fill NaN with the mean of the corresponding column.
 \end{itemize}
 
-The impact of both methods is compared in section \ref{data-analysis}~\nameref{data-analysis}
+The impact of both methods is compared in section
+\hyperref[data-analysis]{Data Analysis}.
 
 Dealing with DateTime type values can also be a challenge because, e.g.,
 linear regression, which can be used to further examine properties of
@@ -2403,7 +2413,8 @@ To gain deeper insights into the impact of the dataset size and training
 steps on model performance, we conducted fine-tuning experiments in four
 distinct ways.
 
-As explained in \hyperref[gathering-domain-knowledge]{Section 3} the
+As explained in section
+\hyperref[gathering-domain-knowledge]{Gathering Domain Knowledge} the
 day-ahead-prices for energy has experienced heightened volatility in
 recent years. To evaluate the impact of dataset characteristics on model
 performance, we divided the data into two subsets. The first dataset
@@ -3491,13 +3502,13 @@ Past covariates (continuous + categorical)
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-DirectTabularModel & ✅ & ✅ & \\
-RecursiveTabularModel & ✅ & ✅ & \\
-DeepARModel & ✅ & ✅ & \\
-PatchTSTModel & & ✅ & \\
-TemporalFusionTransformerModel & ✅ & ✅ & ✅ \\
-TiDEModel & ✅ & ✅ & \\
-WaveNetModel & ✅ & ✅ & \\
+DirectTabularModel & \checkmark & \checkmark & \\
+RecursiveTabularModel & \checkmark & \checkmark & \\
+DeepARModel & \checkmark & \checkmark & \\
+PatchTSTModel & & \checkmark & \\
+TemporalFusionTransformerModel & \checkmark & \checkmark & \checkmark \\
+TiDEModel & \checkmark & \checkmark & \\
+WaveNetModel & \checkmark & \checkmark & \\
 \end{longtable}}
 
 \hyperref[bibliography]{[AutoGluon Forecasting Model Zoo, 2025]}
@@ -3699,9 +3710,10 @@ experiments incorporating news embeddings and intra-day price forecasts.
     \section{Predictive Modeling}\label{predictive-modeling}
 
     In this section, we compare our best-performing models introduced in
-\hyperref[visualization-and-story-telling]{Section 5}. The best model
-will be used to perform the final forecast to predict the day-ahead
-energy prices for the 2025-02-18.
+section
+\hyperref[visualization-and-story-telling]{Visualization and Story Telling}.
+The best model will be used to perform the final forecast to predict the
+day-ahead energy prices for the 2025-02-18.
 
     \subsection{Final Benchmark}\label{final-benchmark}
 
@@ -3797,6 +3809,12 @@ this much more complex approach employed by AutoGluon.
 
     \subsection{Final Forecast}\label{final-forecast}
 
+    The goal of the BTW 2025 Data Science Challenge is to forecast the
+day-ahead energy prices for Germany on February 18, 2025. In the
+following section, we load a fine-tuned Chronos-T5 (Large) model trained
+on data up to February 4, 2025, and utilize it to perform an hourly
+forecast.
+
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \prompt{In}{incolor}{ }{\boxspacing}
 \begin{small}
@@ -3862,19 +3880,115 @@ this much more complex approach employed by AutoGluon.
 \end{tcolorbox}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_182_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_183_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
+    The graph above visualizes the final forecast for the day-ahead energy
+prices for Germany on February 18, 2025. We compared our forecasted
+values with the actual data from last year. We can observe that the
+day-ahead energy price is relatively high compared to the prices one
+year ago, as shown in the plot above.
+
+One possible explanation for this increase is the disruption in Russian
+gas transit through Ukraine. As with the beginning of 2025, Gazprom has
+halted gas deliveries via Ukraine after the transit contract expired.
+This disruption may have contributed to higher energy prices.
+
     \subsection{Conclusion}\label{conclusion}
 
-We compared our best performing models and generated the final forecast.
-Since Chronos showed the best results on the MAE we used this model for
-the final forecast. We can see that the day-ahead energy price is
-relatively high compared to the average and compared to the prices one
-year ago which are presented in the plot above.
+We compared our best-performing models, generated the final forecast,
+and visualized our results. Furthermore, we analyzed our forecasted
+values in comparison to last year's prices.
 
-    \section{Summary \& Future Work}\label{summary-future-work}
+    \section{Summary and Future Work}\label{summary-and-future-work}
+
+    \subsection{Summary}\label{summary}
+
+This report describes the methodology used by the Dresden Database
+Research Group to forecast day-ahead electricity prices as part of the
+BTW 2025 Data Science Challenge. The focus was on the comparison and
+optimisation of established time series forecasting methods to improve
+forecasting accuracy. First, in-depth domain knowledge about energy
+markets and electricity pricing was researched and analysed (see section
+\hyperref[gathering-domain-knowledge]{Gathering Domain Knowledge}).
+Several relevant data sources were then identified, including financial,
+meteorological, and social factors that have a significant influence on
+day-ahead prices. The data was analysed iteratively, including an
+assessment of variance in SMARD data and an evaluation of feature
+importance across different models. Additionally, advanced data analysis
+techniques, including explainable AI, were applied to gain deeper
+insights into the predictive models. Based on this analysis, the
+individual we utilized various time series forecasting models, including
+LSTM-based models, Chronos, Temporal Fusion Transformer and AutoGluon
+(see section
+\hyperref[visualization-and-story-telling]{Visualization and Story Telling}).
+AutoGluon was enhanced through various tuning strategies, including
+covariate forecasting, intraday calculations, and news embeddings to
+improve performance. Chronos underwent fine-tuning to refine its
+predictive capabilities , while TFT was implemented as a multivariate
+transformer-based model. In a final benchmarking exercise, conducted
+over a six-month period, the models were evaluated based on their
+forecasting accuracy. The best-performing models from AutoGluon and
+PyTorch were compared against a baseline (see section
+\hyperref[predictive-modeling]{Predictive Modelling}). Chronos achieved
+the best MAE and was therefore selected for the official forecast
+submission in the BTW 2025 Data Science Challenge.
+
+    \subsection{Future Work}\label{future-work}
+
+\paragraph{Weather Improvements}\label{weather-improvements}
+
+While the current weather implementation provides a solid foundation,
+various measures could be implemented to further optimise the process:
+
+\begin{itemize}
+\item
+  The installation of a greater number of weather stations would
+  facilitate a more detailed and regionally differentiated depiction of
+  weather conditions.
+\item
+  In addition, calculating an average at the country level has the
+  potential to enhance the representativeness of the basis. This average
+  could then be weighted with the population density and the regionally
+  available capacity of the individual power plant types in order to
+  better model local energy generation and demand.
+\item
+  Furthermore, the incorporation of extreme weather events, such as heat
+  waves, cold snaps, and storms, is imperative for the analysis and
+  forecasting of energy generation and demand. Including data on these
+  events could facilitate more precise prediction of unexpected
+  fluctuations in energy production and demand. The analysis of
+  long-term weather patterns, including seasonal fluctuations and the
+  effects of climate change, has the potential to significantly enhance
+  forecasting accuracy.
+\end{itemize}
+
+By expanding the analysed data set, weather implementation could be made
+more precise and flexible, allowing it to respond better to the
+requirements of a dynamic energy market.
+
+    \paragraph{Advancing LSTM Models}\label{advancing-lstm-models}
+
+Since the Encoder Decoder LSTM with attention has shown to be superior
+to LSTM models without attention, it might lead to a further improved
+forecasting accuracy to use an additional feature attention. This could
+help the model to focus only on important features rather than weighting
+each feature evenly. Also, LSTM models benefit strongly from a dataset
+with substained features. Therefore, finding even more meaningful
+features could support the model on learning correct forecasts. Further
+optimizing the model on the combination of features, the model size and
+other hyperparameters could possibly decrease the error of the final
+forecast.
+
+    \paragraph{Hyperparameter Optimization for
+Chronos}\label{hyperparameter-optimization-for-chronos}
+
+Since our investigation showed that Chronos delivered competitive
+results, it would be valuable to further develop the model and enhance
+the fine-tuning process. One effective approach is hyperparameter
+optimization, which identifies the best-performing configuration. By
+this optimization, we can potentially achieve even better results.
 
     \subsection{Self-Organization in Academic
 Projects}\label{self-organization-in-academic-projects}
@@ -4008,82 +4122,6 @@ contributed to our project's success by:
 The experience demonstrated that effective organization and
 communication structures are as crucial to project success as technical
 expertise, particularly in large-scale academic collaborations.
-
-    \subsection{Future Work}\label{future-work}
-
-\paragraph{Weather Improvements}\label{weather-improvements}
-
-While the current weather implementation provides a solid foundation,
-various measures could be implemented to further optimise the process:
-
-\begin{itemize}
-\item
-  The installation of a greater number of weather stations would
-  facilitate a more detailed and regionally differentiated depiction of
-  weather conditions.
-\item
-  In addition, calculating an average at the country level has the
-  potential to enhance the representativeness of the basis. This average
-  could then be weighted with the population density and the regionally
-  available capacity of the individual power plant types in order to
-  better model local energy generation and demand.
-\item
-  Furthermore, the incorporation of extreme weather events, such as heat
-  waves, cold snaps, and storms, is imperative for the analysis and
-  forecasting of energy generation and demand. Including data on these
-  events could facilitate more precise prediction of unexpected
-  fluctuations in energy production and demand. The analysis of
-  long-term weather patterns, including seasonal fluctuations and the
-  effects of climate change, has the potential to significantly enhance
-  forecasting accuracy.
-\item
-  Hyperparameter optimization for Chronos.
-\end{itemize}
-
-By expanding the analysed data set, weather implementation could be made
-more precise and flexible, allowing it to respond better to the
-requirements of a dynamic energy market.
-
-    \paragraph{Advancing LSTM Models}\label{advancing-lstm-models}
-
-Since the Encoder Decoder LSTM with attention has shown to be superior
-to LSTM models without attention, it might lead to a further improved
-forecasting accuracy to use an additional feature attention. This could
-help the model to focus only on important features rather than weighting
-each feature evenly. Also, LSTM models benefit strongly from a dataset
-with substained features. Therefore, finding even more meaningful
-features could support the model on learning correct forecasts. Further
-optimizing the model on the combination of features, the model size and
-other hyperparameters could possibly decrease the error of the final
-forecast.
-
-    \subsection{Summary}\label{summary}
-
-This report describes the methodology used by the Dresden Database
-Research Group to forecast day-ahead electricity prices as part of the
-BTW 2025 Data Science Challenge. The focus was on the comparison and
-optimisation of established time series forecasting methods to improve
-forecasting accuracy. First, in-depth domain knowledge about energy
-markets and electricity pricing was researched and analysed (\ref{gathering-domain-knowledge}~\nameref{gathering-domain-knowledge}). Several relevant data sources were then identified,
-including financial, meteorological, and social factors that have a
-significant influence on day-ahead prices. The data was analysed
-iteratively, including an assessment of variance in SMARD data and an
-evaluation of feature importance across different models. Additionally,
-advanced data analysis techniques, including explainable AI, were
-applied to gain deeper insights into the predictive models. Based on
-this analysis, the individual we utilized various time series
-forecasting models, including LSTM-based models, Chronos, Temporal
-Fusion Transformer and AutoGluon (\ref{visualization-and-story-telling}~\nameref{visualization-and-story-telling}).
-AutoGluon was enhanced through various tuning strategies, including
-covariate forecasting, intraday calculations, and news embeddings to
-improve performance. Chronos underwent fine-tuning to refine its
-predictive capabilities , while TFT was implemented as a multivariate
-transformer-based model. In a final benchmarking exercise, conducted
-over a six-month period, the models were evaluated based on their
-forecasting accuracy. The best-performing models from AutoGluon and
-PyTorch were compared against a baseline (\ref{predictive-modeling}~\nameref{predictive-modeling}).
-Chronos achieved the best MAE and was therefore selected for the
-official forecast submission in the BTW 2025 Data Science Challenge.
 
     \subsection{Conclusion}\label{conclusion}
 
