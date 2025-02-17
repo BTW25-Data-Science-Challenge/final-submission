@@ -1,9 +1,14 @@
-# autogluon
-# statsmodels
+git+https://github.com/amazon-science/chronos-forecasting.git
+torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+pandas
+numpy
+autogluon
+statsmodels
 python-dotenv
 entsoe-py
 newsapi-python
-# sentence-transformers
-pandas
-numpy
+sentence-transformers
+tensorflow
+seaborn
+pytorch_forecasting
 tenacity
